@@ -6,27 +6,31 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Baby Sleep">
-<meta name="theme-color" content="#5b8c5a">
+<meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌙%3C/text%3E%3C/svg%3E">
 <title>Baby Sleep Tracker</title>
 <style>
   :root {
-    --bg: #f5f0eb;
+    --bg: #0a0a0a;
     --card: #ffffff;
-    --primary: #5b8c5a;
-    --primary-light: #e8f5e9;
-    --accent: #c4956a;
-    --accent-light: #fff3e0;
-    --text: #3d3d3d;
-    --text-light: #888;
-    --sleep: #7e9aa8;
-    --sleep-bg: #e3f0f5;
-    --awake: #c4956a;
-    --awake-bg: #fff3e0;
-    --border: #e0ddd8;
-    --shadow: 0 2px 12px rgba(0,0,0,0.06);
-    --danger: #c0392b;
-    --danger-light: #fadbd8;
+    --card-alt: #f5f5f5;
+    --primary: #00c853;
+    --primary-dark: #009624;
+    --accent: #2962ff;
+    --accent-light: #e3f2fd;
+    --text: #1a1a1a;
+    --text-light: #666;
+    --text-muted: #999;
+    --sleep: #2962ff;
+    --sleep-bg: #e3f2fd;
+    --awake: #00c853;
+    --awake-bg: #e8f5e9;
+    --border: #e0e0e0;
+    --shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --danger: #ff1744;
+    --danger-light: #ffebee;
+    --warning: #ff9100;
+    --warning-bg: #fff3e0;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
@@ -40,50 +44,78 @@
     -webkit-font-smoothing: antialiased;
   }
   .container { max-width: 480px; margin: 0 auto; }
-  h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 4px; color: var(--primary); }
-  .subtitle { text-align: center; font-size: 13px; color: var(--text-light); margin-bottom: 20px; }
+  h1 { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 4px; color: var(--primary); letter-spacing: -0.5px; }
+  .subtitle { text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
 
   .card {
     background: var(--card);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 14px;
     box-shadow: var(--shadow);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .card-dark {
+    background: #1a1a1a;
+    border: 1px solid #333;
   }
   .section-title {
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-light);
-    margin-bottom: 12px;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 14px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
+  .section-title.green { color: var(--primary); }
 
+  /* Wake input */
+  .wake-section {
+    text-align: center;
+    padding: 24px 16px;
+  }
+  .wake-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .wake-time-display {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
   .wake-input-row {
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
   }
   .wake-input-row input[type="time"] {
-    font-size: 20px;
-    padding: 10px 14px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
+    font-size: 22px;
+    padding: 12px 18px;
+    border: 2px solid var(--primary);
+    border-radius: 14px;
     background: var(--bg);
-    color: var(--text);
+    color: var(--primary);
     font-weight: 700;
     font-family: inherit;
     -webkit-appearance: none;
+    text-align: center;
   }
+
   .btn {
-    padding: 10px 16px;
+    padding: 12px 20px;
     border: none;
-    border-radius: 12px;
-    font-size: 14px;
+    border-radius: 14px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     transition: transform 0.1s, opacity 0.15s;
@@ -91,223 +123,314 @@
     -webkit-appearance: none;
   }
   .btn:active { transform: scale(0.96); opacity: 0.8; }
-  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary { background: var(--primary); color: #000; }
   .btn-accent { background: var(--accent); color: white; }
   .btn-outline {
     background: transparent;
-    border: 2px solid var(--border);
-    color: var(--text);
+    border: 2px solid var(--primary);
+    color: var(--primary);
   }
+  .btn-outline-blue {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+  .btn-small { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
   .btn-danger { background: var(--danger); color: white; }
+  .btn-warning { background: var(--warning); color: #000; }
 
-  .timeline { position: relative; padding-left: 28px; }
+  /* Timeline */
+  .timeline { position: relative; padding-left: 32px; }
   .timeline::before {
     content: '';
     position: absolute;
-    left: 10px;
+    left: 11px;
     top: 0;
     bottom: 0;
     width: 3px;
-    background: var(--border);
+    background: linear-gradient(to bottom, var(--primary), var(--accent));
     border-radius: 2px;
   }
   .block {
     position: relative;
-    margin-bottom: 10px;
-    border-radius: 14px;
-    padding: 14px 16px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    padding: 16px 18px;
     transition: all 0.2s;
+    border: 2px solid transparent;
   }
   .block::before {
     content: '';
     position: absolute;
-    left: -22px;
-    top: 16px;
-    width: 12px;
-    height: 12px;
+    left: -25px;
+    top: 18px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    border: 3px solid var(--card);
+    border: 3px solid var(--bg);
     z-index: 1;
+    box-shadow: 0 0 0 2px var(--bg);
   }
-  .block.sleep { background: var(--sleep-bg); }
+  .block.sleep { background: var(--sleep-bg); border-color: var(--sleep); }
   .block.sleep::before { background: var(--sleep); }
-  .block.awake { background: var(--awake-bg); }
+  .block.awake { background: var(--awake-bg); border-color: var(--awake); }
   .block.awake::before { background: var(--awake); }
-  .block.past { opacity: 0.5; }
+  .block.past { opacity: 0.45; }
   .block.current {
-    box-shadow: 0 0 0 2.5px var(--primary), 0 4px 16px rgba(91,140,90,0.15);
+    box-shadow: 0 0 0 3px var(--primary), 0 8px 32px rgba(0,200,83,0.2);
+    transform: scale(1.02);
   }
+  .block.editing {
+    box-shadow: 0 0 0 3px var(--accent), 0 8px 32px rgba(41,98,255,0.2);
+  }
+
   .block-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .block-type {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
   }
   .block.sleep .block-type { color: var(--sleep); }
   .block.awake .block-type { color: var(--awake); }
   .block-time {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-light);
-    font-weight: 500;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
   .block-duration {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 26px;
+    font-weight: 800;
     color: var(--text);
+    font-variant-numeric: tabular-nums;
   }
   .block-status {
     font-size: 11px;
-    font-weight: 600;
-    padding: 3px 10px;
-    border-radius: 8px;
-    margin-top: 6px;
-    display: inline-block;
-  }
-  .status-done { background: #d4edda; color: #155724; }
-  .status-active { background: var(--primary-light); color: var(--primary); }
-  .status-upcoming { background: #e9ecef; color: #6c757d; }
-
-  .controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 14px;
-  }
-  .controls .btn { flex: 1; padding: 14px; font-size: 15px; }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .stat-box {
-    background: var(--bg);
-    border-radius: 12px;
-    padding: 14px;
-    text-align: center;
-  }
-  .stat-value {
-    font-size: 24px;
     font-weight: 700;
-    color: var(--primary);
-  }
-  .stat-label {
-    font-size: 11px;
-    color: var(--text-light);
-    margin-top: 2px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 8px;
+    display: inline-block;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+  .status-done { background: #c8e6c9; color: #1b5e20; }
+  .status-active { background: var(--primary); color: #000; }
+  .status-upcoming { background: #f5f5f5; color: var(--text-light); }
+  .status-edited { background: var(--warning-bg); color: #e65100; }
 
-  .setting-row {
+  .block-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
   }
-  .setting-row:last-child { border-bottom: none; }
-  .setting-label { font-size: 14px; font-weight: 500; }
-  .setting-input {
+  .block-actions .btn { flex: 1; min-width: 100px; }
+
+  /* Edit mode */
+  .edit-mode {
+    background: var(--card-alt);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .edit-mode label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .edit-inputs {
     display: flex;
+    gap: 10px;
     align-items: center;
-    gap: 6px;
   }
-  .setting-input input {
-    width: 64px;
-    padding: 8px 10px;
-    border: 2px solid var(--border);
+  .edit-inputs input[type="number"] {
+    width: 80px;
+    padding: 10px;
+    border: 2px solid var(--accent);
     border-radius: 10px;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 700;
     text-align: center;
     font-family: inherit;
     -webkit-appearance: none;
   }
-  .setting-input span { font-size: 12px; color: var(--text-light); }
+  .edit-inputs span {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 600;
+  }
+  .edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
 
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .controls .btn { flex: 1; padding: 16px; font-size: 16px; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .stat-box {
+    background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    border: 1px solid #333;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.blue { color: var(--accent); }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  /* Settings */
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .setting-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .setting-input input {
+    width: 70px;
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+  .setting-input span { font-size: 12px; color: var(--text-light); font-weight: 600; }
+
+  /* History */
   .history-item {
-    padding: 10px 0;
+    padding: 12px 0;
     border-bottom: 1px solid var(--border);
     font-size: 13px;
   }
   .history-item:last-child { border-bottom: none; }
-  .history-date { font-weight: 700; color: var(--text); }
-  .history-detail { color: var(--text-light); margin-top: 2px; }
+  .history-date { font-weight: 700; color: var(--text); font-size: 14px; }
+  .history-detail { color: var(--text-light); margin-top: 4px; line-height: 1.5; }
 
-  .notify-banner {
-    background: var(--primary-light);
-    border: 1.5px solid var(--primary);
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-    font-size: 13px;
+  /* Alert banner */
+  .alert-banner {
+    background: linear-gradient(135deg, var(--warning-bg), #fff8e1);
+    border: 2px solid var(--warning);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e65100;
     display: flex;
     align-items: center;
     gap: 10px;
   }
-  .notify-banner button {
+  .alert-banner button {
     margin-left: auto;
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 8px 16px;
+    font-size: 13px;
   }
 
+  /* Toast */
   .toast {
     position: fixed;
-    bottom: 24px;
+    bottom: 100px;
     left: 50%;
     transform: translateX(-50%) translateY(100px);
-    background: var(--text);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 600;
+    background: var(--primary);
+    color: #000;
+    padding: 14px 28px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
     z-index: 1000;
     opacity: 0;
     transition: all 0.3s;
     pointer-events: none;
     white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,200,83,0.3);
   }
   .toast.show {
     transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
+  .toast.blue {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 20px rgba(41,98,255,0.3);
+  }
 
+  /* Tab bar */
   .tab-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--border);
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid #333;
     display: flex;
     justify-content: space-around;
-    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
     z-index: 100;
   }
   .tab-btn {
     background: none;
     border: none;
     font-size: 11px;
-    font-weight: 600;
-    color: var(--text-light);
+    font-weight: 700;
+    color: #666;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 4px 16px;
+    gap: 4px;
+    padding: 6px 20px;
     font-family: inherit;
+    transition: color 0.2s;
   }
   .tab-btn.active { color: var(--primary); }
-  .tab-btn span { font-size: 20px; }
+  .tab-btn span { font-size: 22px; }
 
   .page { display: none; }
   .page.active { display: block; }
@@ -315,14 +438,21 @@
   .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: var(--text-light);
+    color: var(--text-muted);
     font-size: 14px;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 16px 0;
   }
 
   @supports (padding-top: env(safe-area-inset-top)) {
     body { padding-top: max(16px, env(safe-area-inset-top)); }
   }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -330,36 +460,47 @@
   <h1>🌙 Baby Sleep</h1>
   <p class="subtitle">Tracker de sueño inteligente</p>
 
-  <div class="notify-banner" id="notifyBanner" style="display:none;">
-    <span>🔔 Activa notificaciones para alertas de siestas</span>
-    <button class="btn btn-primary" onclick="requestNotify()">Activar</button>
+  <!-- Alert for notifications -->
+  <div class="alert-banner" id="alertBanner" style="display:none;">
+    <span>🔔 Las notificaciones nativas no funcionan en iOS. Usa la app con la pantalla activa o añádela a inicio.</span>
   </div>
 
+  <!-- PAGE: TODAY -->
   <div class="page active" id="page-today">
-    <div class="card">
-      <div class="section-title">🌅 Hora de despertar</div>
-      <div class="wake-input-row">
-        <input type="time" id="wakeTime" value="07:00">
-        <button class="btn btn-primary" onclick="setNow()">Ahora</button>
-        <button class="btn btn-outline" onclick="recalcFromWake()">↻</button>
+
+    <!-- Wake Time Input -->
+    <div class="card card-dark">
+      <div class="section-title green">🌅 ¿A qué hora despertó hoy?</div>
+      <div class="wake-section">
+        <div class="wake-time-display" id="wakeDisplay">07:00</div>
+        <div class="wake-input-row">
+          <input type="time" id="wakeTime" value="07:00" onchange="updateWakeDisplay()">
+          <button class="btn btn-primary" onclick="setNow()">Ahora</button>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-accent" onclick="generateSchedule()" style="width:100%;padding:16px;font-size:16px;">
+            📅 Generar rutina del día
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="card">
+    <!-- Timeline -->
+    <div class="card" id="timelineCard" style="display:none;">
       <div class="section-title">📋 Rutina del día</div>
       <div class="timeline" id="timeline"></div>
-      <div class="controls" id="controls"></div>
     </div>
 
-    <div class="card">
-      <div class="section-title">📊 Resumen</div>
+    <!-- Stats -->
+    <div class="card" id="statsCard" style="display:none;">
+      <div class="section-title green">📊 Resumen del día</div>
       <div class="stats-grid">
         <div class="stat-box">
           <div class="stat-value" id="statAwake">--</div>
           <div class="stat-label">Despierto</div>
         </div>
         <div class="stat-box">
-          <div class="stat-value" id="statSleep">--</div>
+          <div class="stat-value blue" id="statSleep">--</div>
           <div class="stat-label">Durmió</div>
         </div>
         <div class="stat-box">
@@ -367,16 +508,20 @@
           <div class="stat-label">Siestas</div>
         </div>
         <div class="stat-box">
-          <div class="stat-value" id="statBedtime">--</div>
+          <div class="stat-value blue" id="statBedtime">--</div>
           <div class="stat-label">A dormir</div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- PAGE: SETTINGS -->
   <div class="page" id="page-settings">
     <div class="card">
-      <div class="section-title">⚙️ Tiempos de rutina</div>
+      <div class="section-title">⚙️ Tiempos por defecto</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">
+        Estos tiempos se usan para generar la rutina inicial. Luego puedes ajustar cada bloque manualmente.
+      </p>
       <div class="setting-row">
         <span class="setting-label">1ª ventana despierto</span>
         <div class="setting-input">
@@ -426,45 +571,39 @@
           <span>min</span>
         </div>
       </div>
-      <div class="controls" style="margin-top:12px;">
-        <button class="btn btn-primary" onclick="applySettings()">Guardar cambios</button>
-        <button class="btn btn-outline" onclick="resetDefaults()">Restablecer</button>
+      <div class="controls" style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="applySettings()">💾 Guardar cambios</button>
+        <button class="btn btn-outline" onclick="resetDefaults()">↺ Restablecer</button>
       </div>
     </div>
 
-    <div class="card">
-      <div class="section-title">🔔 Notificaciones</div>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">
-        Se enviarán alertas 10 min antes de cada siesta y antes de la hora de dormir.
+    <div class="card card-dark">
+      <div class="section-title">🗑️ Datos</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+        Esto borrará todo el historial y la configuración guardada.
       </p>
       <div class="controls">
-        <button class="btn btn-primary" onclick="requestNotify()">Activar notificaciones</button>
-        <button class="btn btn-outline" onclick="testNotify()">Probar ahora</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">🗑️ Datos</div>
-      <div class="controls">
-        <button class="btn btn-danger" onclick="clearAllData()">Borrar todo</button>
+        <button class="btn btn-danger" onclick="clearAllData()" style="width:100%;">Borrar todo</button>
       </div>
     </div>
   </div>
 
+  <!-- PAGE: HISTORY -->
   <div class="page" id="page-history">
     <div class="card">
-      <div class="section-title">🗓️ Historial</div>
+      <div class="section-title">📊 Historial</div>
       <div id="history"></div>
     </div>
   </div>
 </div>
 
+<!-- Tab Bar -->
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('today')">
     <span>📋</span>Hoy
   </button>
   <button class="tab-btn" onclick="switchTab('history')">
-    <span>📊</span>Historial
+    <span>📈</span>Historial
   </button>
   <button class="tab-btn" onclick="switchTab('settings')">
     <span>⚙️</span>Ajustes
@@ -474,14 +613,15 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── STATE ───
 const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180 };
 let settings = loadSettings();
 let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
-let notifyEnabled = false;
-let notifyTimer = null;
+let editingBlockIndex = null;
 
+// ─── HELPERS ───
 function pad(n) { return n.toString().padStart(2,'0'); }
 function timeToMinutes(t) {
   const [h,m] = t.split(':').map(Number);
@@ -502,13 +642,15 @@ function getNowMinutes() {
   const now = new Date();
   return now.getHours()*60 + now.getMinutes();
 }
-function showToast(msg) {
+function showToast(msg, isBlue) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.className = 'toast' + (isBlue ? ' blue' : '');
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+// ─── STORAGE ───
 function loadSettings() {
   const saved = localStorage.getItem('babySleepSettings');
   return saved ? JSON.parse(saved) : { ...DEFAULTS };
@@ -530,12 +672,25 @@ function loadTodayState() {
 function saveTodayState() {
   localStorage.setItem('babySleepToday', JSON.stringify({
     wakeTime: document.getElementById('wakeTime').value,
+    schedule: schedule,
     currentBlockIndex,
     actualTimes,
     date: new Date().toDateString()
   }));
 }
 
+// ─── WAKE TIME ───
+function updateWakeDisplay() {
+  document.getElementById('wakeDisplay').textContent = document.getElementById('wakeTime').value;
+}
+function setNow() {
+  const now = new Date();
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('wakeTime').value = timeStr;
+  updateWakeDisplay();
+}
+
+// ─── BUILD SCHEDULE ───
 function buildSchedule(wakeMinutes) {
   const blocks = [];
   let t = wakeMinutes;
@@ -549,64 +704,108 @@ function buildSchedule(wakeMinutes) {
     {type:'awake', label:'Última ventana despierto', dur:settings.w4},
     {type:'sleep', label:'Sueño nocturno', dur:600}
   ];
-  seq.forEach(s => {
-    blocks.push({ type:s.type, label:s.label, start:t, plannedDur:s.dur, end:t+s.dur });
+  seq.forEach((s, idx) => {
+    blocks.push({
+      type: s.type,
+      label: s.label,
+      start: t,
+      plannedDur: s.dur,
+      actualDur: s.dur,
+      end: t + s.dur,
+      index: idx,
+      edited: false
+    });
     t += s.dur;
   });
   return blocks;
 }
 
-function recalcFromWake() {
+// ─── GENERATE SCHEDULE ───
+function generateSchedule() {
   const wakeStr = document.getElementById('wakeTime').value;
   const wakeMins = timeToMinutes(wakeStr);
   schedule = buildSchedule(wakeMins);
-  actualTimes = [];
   currentBlockIndex = 0;
+  actualTimes = [];
+  editingBlockIndex = null;
+
+  document.getElementById('timelineCard').style.display = 'block';
+  document.getElementById('statsCard').style.display = 'block';
+
   saveTodayState();
   render();
-  scheduleNotifications();
+  showToast('📅 Rutina generada');
 }
 
-function recalcFromActuals() {
-  if (actualTimes.length === 0) { recalcFromWake(); return; }
-  const lastActual = actualTimes[actualTimes.length - 1];
-  let t = lastActual.endTime;
-  for (let i = lastActual.index + 1; i < schedule.length; i++) {
-    const dur = schedule[i].plannedDur;
+// ─── RECALC FROM EDITS ───
+function recalcFromIndex(startIdx) {
+  let t = schedule[startIdx].start;
+  for (let i = startIdx; i < schedule.length; i++) {
+    const dur = schedule[i].actualDur;
     schedule[i].start = t;
     schedule[i].end = t + dur;
+    schedule[i].plannedDur = dur;
     t += dur;
   }
   saveTodayState();
   render();
-  scheduleNotifications();
 }
 
+// ─── MARK DONE ───
 function markDone(index) {
   const now = getNowMinutes();
   actualTimes.push({ index, endTime: now });
   currentBlockIndex = index + 1;
-  recalcFromActuals();
-  showToast(index % 2 === 0 ? '💤 Siesta registrada' : '☀️ Despertar registrado');
-}
 
-function markStartedNow(index) {
-  const now = getNowMinutes();
-  schedule[index].start = now;
-  schedule[index].end = now + schedule[index].plannedDur;
-  let t = schedule[index].end;
+  // Update actual duration of completed block
+  const actualDur = now - schedule[index].start;
+  if (actualDur > 0) {
+    schedule[index].actualDur = actualDur;
+    schedule[index].end = now;
+    schedule[index].edited = true;
+  }
+
+  // Recalc remaining blocks
+  let t = now;
   for (let i = index + 1; i < schedule.length; i++) {
-    const dur = schedule[i].plannedDur;
+    const dur = schedule[i].actualDur;
     schedule[i].start = t;
     schedule[i].end = t + dur;
     t += dur;
   }
+
   saveTodayState();
   render();
-  scheduleNotifications();
-  showToast('⏰ Horario ajustado');
+  showToast(index % 2 === 0 ? '💤 Siesta registrada' : '☀️ Despertar registrado');
 }
 
+// ─── EDIT BLOCK ───
+function startEdit(index) {
+  editingBlockIndex = index;
+  render();
+}
+
+function cancelEdit() {
+  editingBlockIndex = null;
+  render();
+}
+
+function saveEdit(index) {
+  const newDur = parseInt(document.getElementById(`edit-dur-${index}`).value);
+  if (isNaN(newDur) || newDur < 5) {
+    showToast('❌ Duración inválida', true);
+    return;
+  }
+
+  schedule[index].actualDur = newDur;
+  schedule[index].edited = true;
+  editingBlockIndex = null;
+
+  recalcFromIndex(index);
+  showToast('✅ Duración actualizada');
+}
+
+// ─── SAVE DAY ───
 function saveDay() {
   const wakeStr = document.getElementById('wakeTime').value;
   const history = loadHistory();
@@ -614,8 +813,8 @@ function saveDay() {
     date: new Date().toLocaleDateString('es-ES'),
     wakeTime: wakeStr,
     bedtime: minutesToTime(schedule[schedule.length-2].end),
-    totalSleep: schedule.filter((b,i) => b.type==='sleep' && i < schedule.length-1).reduce((s,b) => s + b.plannedDur, 0),
-    totalAwake: schedule.filter(b => b.type==='awake').reduce((s,b) => s + b.plannedDur, 0),
+    totalSleep: schedule.filter((b,i) => b.type==='sleep' && i < schedule.length-1).reduce((s,b) => s + b.actualDur, 0),
+    totalAwake: schedule.filter(b => b.type==='awake').reduce((s,b) => s + b.actualDur, 0),
     naps: 3
   };
   history.unshift(entry);
@@ -623,12 +822,12 @@ function saveDay() {
   saveHistory(history);
   localStorage.removeItem('babySleepToday');
   renderHistory();
-  showToast('✅ Día guardado');
+  showToast('✅ Día guardado en historial');
 }
 
+// ─── RENDER ───
 function render() {
   const timeline = document.getElementById('timeline');
-  const controls = document.getElementById('controls');
   const now = getNowMinutes();
 
   let html = '';
@@ -639,51 +838,91 @@ function render() {
     const isCurrent = block.start <= now && block.end >= now;
     const isDone = i < currentBlockIndex;
     const isNight = i === schedule.length - 1;
+    const isEditing = editingBlockIndex === i;
 
-    if (block.type === 'awake') totalAwake += block.plannedDur;
-    if (block.type === 'sleep' && !isNight) { totalSleep += block.plannedDur; napCount++; }
+    if (block.type === 'awake') totalAwake += block.actualDur;
+    if (block.type === 'sleep' && !isNight) { totalSleep += block.actualDur; napCount++; }
 
     let statusClass = 'status-upcoming';
     let statusText = 'Próximo';
-    if (isDone) { statusClass = 'status-done'; statusText = '✓ Hecho'; }
+    if (isDone) { statusClass = 'status-done'; statusText = '✓ Completado'; }
     else if (isCurrent) { statusClass = 'status-active'; statusText = '⏳ Ahora'; }
     else if (isPast) { statusClass = 'status-done'; statusText = 'Pasado'; }
+    if (block.edited && !isDone) { statusClass = 'status-edited'; statusText = '✎ Editado'; }
 
     const timeRange = `${minutesToTime(block.start)} - ${minutesToTime(block.end)}`;
-    const duration = formatDuration(block.plannedDur);
+    const duration = formatDuration(block.actualDur);
+    const plannedText = block.edited ? ` (plan: ${formatDuration(block.plannedDur)})` : '';
 
     html += `
-      <div class="block ${block.type} ${isDone || isPast ? 'past' : ''} ${isCurrent ? 'current' : ''}">
+      <div class="block ${block.type} ${isDone || isPast ? 'past' : ''} ${isCurrent ? 'current' : ''} ${isEditing ? 'editing' : ''}">
         <div class="block-header">
           <span class="block-type">${block.label}</span>
           <span class="block-time">${timeRange}</span>
         </div>
-        <div class="block-duration">${duration}</div>
+        <div class="block-duration">${duration}${plannedText}</div>
         <span class="block-status ${statusClass}">${statusText}</span>
+    `;
+
+    // Edit mode
+    if (isEditing) {
+      html += `
+        <div class="edit-mode">
+          <label>✏️ Modificar duración</label>
+          <div class="edit-inputs">
+            <input type="number" id="edit-dur-${i}" value="${block.actualDur}" min="5" max="600">
+            <span>minutos</span>
+          </div>
+          <div class="edit-actions">
+            <button class="btn btn-primary btn-small" onclick="saveEdit(${i})">💾 Guardar</button>
+            <button class="btn btn-outline-blue btn-small" onclick="cancelEdit()">✕ Cancelar</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Actions for current/upcoming blocks
+    if (!isDone && !isEditing && !isNight) {
+      html += `
+        <div class="block-actions">
+          <button class="btn btn-primary btn-small" onclick="markDone(${i})">
+            ${block.type === 'awake' ? '😴 Empezó siesta' : '☀️ Despertó'}
+          </button>
+          <button class="btn btn-outline-blue btn-small" onclick="startEdit(${i})">
+            ✏️ Editar duración
+          </button>
+        </div>
+      `;
+    }
+
+    // Edit button for past blocks too
+    if ((isDone || isPast) && !isEditing && !isNight) {
+      html += `
+        <div class="block-actions">
+          <button class="btn btn-outline-blue btn-small" onclick="startEdit(${i})">
+            ✏️ Corregir duración
+          </button>
+        </div>
+      `;
+    }
+
+    html += `</div>`;
+  });
+
+  // Add save day button at the end
+  if (currentBlockIndex >= schedule.length - 1) {
+    html += `
+      <div style="margin-top:20px;text-align:center;">
+        <button class="btn btn-accent" onclick="saveDay()" style="width:100%;padding:16px;font-size:16px;">
+          💾 Guardar día en historial
+        </button>
       </div>
     `;
-  });
+  }
 
   timeline.innerHTML = html;
 
-  if (currentBlockIndex < schedule.length - 1) {
-    const curBlock = schedule[currentBlockIndex];
-    controls.innerHTML = `
-      <button class="btn btn-primary" onclick="markDone(${currentBlockIndex})">
-        ${curBlock.type === 'awake' ? '😴 Empezó siesta' : '☀️ Despertó'}
-      </button>
-      <button class="btn btn-accent" onclick="markStartedNow(${currentBlockIndex})">
-        ⏰ Ajustar ahora
-      </button>
-    `;
-  } else if (currentBlockIndex === schedule.length - 1) {
-    controls.innerHTML = `
-      <button class="btn btn-primary" onclick="saveDay()">💾 Guardar día</button>
-    `;
-  } else {
-    controls.innerHTML = '';
-  }
-
+  // Update stats
   document.getElementById('statAwake').textContent = formatDuration(totalAwake);
   document.getElementById('statSleep').textContent = formatDuration(totalSleep);
   document.getElementById('statNaps').textContent = napCount;
@@ -694,17 +933,21 @@ function renderHistory() {
   const el = document.getElementById('history');
   const history = loadHistory();
   if (history.length === 0) {
-    el.innerHTML = '<div class="empty-state">No hay registros aún.<br>Guarda tu primer día desde la pestaña Hoy.</div>';
+    el.innerHTML = '<div class="empty-state">No hay registros aún.<br>Genera una rutina y guárdala al final del día.</div>';
     return;
   }
   el.innerHTML = history.slice(0,14).map(h => `
     <div class="history-item">
       <div class="history-date">${h.date}</div>
-      <div class="history-detail">Despertó ${h.wakeTime} · Dormir ${h.bedtime} · ${h.naps} siestas · ${formatDuration(h.totalSleep)} dormido</div>
+      <div class="history-detail">
+        🌅 ${h.wakeTime} · 🌙 ${h.bedtime}<br>
+        😴 ${h.naps} siestas · 💤 ${formatDuration(h.totalSleep)} dormido · ☀️ ${formatDuration(h.totalAwake)} despierto
+      </div>
     </div>
   `).join('');
 }
 
+// ─── SETTINGS ───
 function applySettings() {
   settings.w1 = parseInt(document.getElementById('w1').value) || DEFAULTS.w1;
   settings.n1 = parseInt(document.getElementById('n1').value) || DEFAULTS.n1;
@@ -714,7 +957,6 @@ function applySettings() {
   settings.n3 = parseInt(document.getElementById('n3').value) || DEFAULTS.n3;
   settings.w4 = parseInt(document.getElementById('w4').value) || DEFAULTS.w4;
   saveSettings();
-  recalcFromWake();
   showToast('✅ Ajustes guardados');
 }
 
@@ -728,22 +970,17 @@ function resetDefaults() {
   document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
   saveSettings();
-  recalcFromWake();
   showToast('Restablecido');
 }
 
-function setNow() {
-  const now = new Date();
-  document.getElementById('wakeTime').value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  recalcFromWake();
-}
-
 function clearAllData() {
-  if (!confirm('¿Borrar TODO el historial y configuración?')) return;
+  if (!confirm('¿Borrar TODO el historial, configuración y rutina actual?')) return;
   localStorage.clear();
   settings = { ...DEFAULTS };
-  actualTimes = [];
+  schedule = [];
   currentBlockIndex = 0;
+  actualTimes = [];
+  editingBlockIndex = null;
   document.getElementById('w1').value = DEFAULTS.w1;
   document.getElementById('n1').value = DEFAULTS.n1;
   document.getElementById('w2').value = DEFAULTS.w2;
@@ -751,11 +988,13 @@ function clearAllData() {
   document.getElementById('w3').value = DEFAULTS.w3;
   document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
-  recalcFromWake();
+  document.getElementById('timelineCard').style.display = 'none';
+  document.getElementById('statsCard').style.display = 'none';
   renderHistory();
-  showToast('🗑️ Datos borrados');
+  showToast('🗑️ Todo borrado');
 }
 
+// ─── TABS ───
 function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -764,58 +1003,9 @@ function switchTab(tab) {
   if (tab === 'history') renderHistory();
 }
 
-async function requestNotify() {
-  if (!('Notification' in window)) {
-    showToast('❌ Notificaciones no soportadas');
-    return;
-  }
-  const perm = await Notification.requestPermission();
-  if (perm === 'granted') {
-    notifyEnabled = true;
-    document.getElementById('notifyBanner').style.display = 'none';
-    showToast('🔔 Notificaciones activadas');
-    scheduleNotifications();
-  } else {
-    showToast('❌ Permiso denegado');
-  }
-}
-
-function testNotify() {
-  if (!notifyEnabled && Notification.permission !== 'granted') {
-    showToast('Primero activa las notificaciones');
-    return;
-  }
-  new Notification('🌙 Baby Sleep', {
-    body: '¡Esta es una notificación de prueba!',
-    icon: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ctext y=\'.9em\' font-size=\'90\'%3E🌙%3C/text%3E%3C/svg%3E',
-    badge: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ctext y=\'.9em\' font-size=\'90\'%3E🌙%3C/text%3E%3C/svg%3E'
-  });
-}
-
-function scheduleNotifications() {
-  if (!notifyEnabled) return;
-  if (notifyTimer) clearInterval(notifyTimer);
-
-  const checkAndNotify = () => {
-    const now = getNowMinutes();
-    schedule.forEach((block, i) => {
-      if (i < currentBlockIndex) return;
-      if (i === schedule.length - 1) return;
-      const alertTime = block.start - 10;
-      if (now === alertTime && block.type === 'sleep') {
-        new Notification('🌙 Baby Sleep', {
-          body: `En 10 min empieza: ${block.label}`,
-          icon: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ctext y=\'.9em\' font-size=\'90\'%3E🌙%3C/text%3E%3C/svg%3E'
-        });
-      }
-    });
-  };
-
-  checkAndNotify();
-  notifyTimer = setInterval(checkAndNotify, 60000);
-}
-
+// ─── INIT ───
 function init() {
+  // Load settings into inputs
   document.getElementById('w1').value = settings.w1;
   document.getElementById('n1').value = settings.n1;
   document.getElementById('w2').value = settings.w2;
@@ -824,39 +1014,35 @@ function init() {
   document.getElementById('n3').value = settings.n3;
   document.getElementById('w4').value = settings.w4;
 
+  // Check iOS and show alert
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    document.getElementById('alertBanner').style.display = 'flex';
+  }
+
+  // Restore today's state if same day
   const todayState = loadTodayState();
   const todayStr = new Date().toDateString();
-  if (todayState && todayState.date === todayStr) {
+  if (todayState && todayState.date === todayStr && todayState.schedule && todayState.schedule.length > 0) {
     document.getElementById('wakeTime').value = todayState.wakeTime;
+    updateWakeDisplay();
+    schedule = todayState.schedule;
     currentBlockIndex = todayState.currentBlockIndex || 0;
     actualTimes = todayState.actualTimes || [];
-    schedule = buildSchedule(timeToMinutes(todayState.wakeTime));
-    if (actualTimes.length > 0) {
-      const last = actualTimes[actualTimes.length - 1];
-      let t = last.endTime;
-      for (let i = last.index + 1; i < schedule.length; i++) {
-        schedule[i].start = t;
-        schedule[i].end = t + schedule[i].plannedDur;
-        t += schedule[i].end;
-      }
-    }
-  } else {
-    recalcFromWake();
+    document.getElementById('timelineCard').style.display = 'block';
+    document.getElementById('statsCard').style.display = 'block';
+    render();
   }
 
-  if ('Notification' in window && Notification.permission === 'default') {
-    document.getElementById('notifyBanner').style.display = 'flex';
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    notifyEnabled = true;
-    scheduleNotifications();
-  }
-
-  render();
   renderHistory();
-  setInterval(render, 60000);
+
+  // Auto refresh every minute
+  setInterval(() => {
+    if (schedule.length > 0) render();
+  }, 60000);
 }
 
 init();
 </script>
 </body>
-</html>  
+</html>
