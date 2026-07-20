@@ -31,6 +31,7 @@
     --danger-light: #ffebee;
     --warning: #ff9100;
     --warning-bg: #fff3e0;
+    --alert: #ff3d00;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; }
@@ -71,105 +72,84 @@
     gap: 8px;
   }
   .section-title.green { color: var(--primary); }
+  .section-title.alert { color: var(--alert); }
 
   /* Wake input */
-  .wake-section {
-    text-align: center;
-    padding: 24px 16px;
-  }
-  .wake-label {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-    font-weight: 500;
-  }
+  .wake-section { text-align: center; padding: 24px 16px; }
+  .wake-label { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; font-weight: 500; }
   .wake-time-display {
-    font-size: 48px;
-    font-weight: 800;
-    color: var(--primary);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -1px;
-    margin-bottom: 16px;
+    font-size: 48px; font-weight: 800; color: var(--primary);
+    font-variant-numeric: tabular-nums; letter-spacing: -1px; margin-bottom: 16px;
   }
   .wake-input-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;
   }
   .wake-input-row input[type="time"] {
-    font-size: 22px;
-    padding: 12px 18px;
-    border: 2px solid var(--primary);
-    border-radius: 14px;
-    background: var(--bg);
-    color: var(--primary);
-    font-weight: 700;
-    font-family: inherit;
-    -webkit-appearance: none;
-    text-align: center;
+    font-size: 22px; padding: 12px 18px; border: 2px solid var(--primary);
+    border-radius: 14px; background: var(--bg); color: var(--primary);
+    font-weight: 700; font-family: inherit; -webkit-appearance: none; text-align: center;
   }
 
   .btn {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
+    padding: 12px 20px; border: none; border-radius: 14px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
     transition: transform 0.1s, opacity 0.15s;
-    font-family: inherit;
-    -webkit-appearance: none;
+    font-family: inherit; -webkit-appearance: none;
   }
   .btn:active { transform: scale(0.96); opacity: 0.8; }
   .btn-primary { background: var(--primary); color: #000; }
   .btn-accent { background: var(--accent); color: white; }
   .btn-outline {
-    background: transparent;
-    border: 2px solid var(--primary);
-    color: var(--primary);
+    background: transparent; border: 2px solid var(--primary); color: var(--primary);
   }
   .btn-outline-blue {
-    background: transparent;
-    border: 2px solid var(--accent);
-    color: var(--accent);
+    background: transparent; border: 2px solid var(--accent); color: var(--accent);
   }
   .btn-small { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
   .btn-danger { background: var(--danger); color: white; }
   .btn-warning { background: var(--warning); color: #000; }
+  .btn-alert { background: var(--alert); color: white; }
+
+  /* Countdown banner */
+  .countdown-banner {
+    background: linear-gradient(135deg, var(--alert), #ff6d00);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    text-align: center;
+    animation: pulse-alert 2s infinite;
+  }
+  @keyframes pulse-alert {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,61,0,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(255,61,0,0); }
+  }
+  .countdown-banner .countdown-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: rgba(255,255,255,0.8); margin-bottom: 4px;
+  }
+  .countdown-banner .countdown-time {
+    font-size: 36px; font-weight: 800; color: white;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-banner .countdown-event {
+    font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 4px;
+  }
 
   /* Timeline */
   .timeline { position: relative; padding-left: 32px; }
   .timeline::before {
-    content: '';
-    position: absolute;
-    left: 11px;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--primary), var(--accent));
+    content: ''; position: absolute; left: 11px; top: 0; bottom: 0;
+    width: 3px; background: linear-gradient(to bottom, var(--primary), var(--accent));
     border-radius: 2px;
   }
   .block {
-    position: relative;
-    margin-bottom: 12px;
-    border-radius: 16px;
-    padding: 16px 18px;
-    transition: all 0.2s;
-    border: 2px solid transparent;
+    position: relative; margin-bottom: 12px; border-radius: 16px;
+    padding: 16px 18px; transition: all 0.2s; border: 2px solid transparent;
   }
   .block::before {
-    content: '';
-    position: absolute;
-    left: -25px;
-    top: 18px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 3px solid var(--bg);
-    z-index: 1;
-    box-shadow: 0 0 0 2px var(--bg);
+    content: ''; position: absolute; left: -25px; top: 18px;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 3px solid var(--bg); z-index: 1; box-shadow: 0 0 0 2px var(--bg);
   }
   .block.sleep { background: var(--sleep-bg); border-color: var(--sleep); }
   .block.sleep::before { background: var(--sleep); }
@@ -185,40 +165,23 @@
   }
 
   .block-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
   }
   .block-type {
-    font-size: 13px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
+    font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
   }
   .block.sleep .block-type { color: var(--sleep); }
   .block.awake .block-type { color: var(--awake); }
   .block-time {
-    font-size: 13px;
-    color: var(--text-light);
-    font-weight: 600;
+    font-size: 13px; color: var(--text-light); font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
   .block-duration {
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
+    font-size: 26px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums;
   }
   .block-status {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
-    margin-top: 8px;
-    display: inline-block;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+    margin-top: 8px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px;
   }
   .status-done { background: #c8e6c9; color: #1b5e20; }
   .status-active { background: var(--primary); color: #000; }
@@ -226,208 +189,95 @@
   .status-edited { background: var(--warning-bg); color: #e65100; }
 
   .block-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    flex-wrap: wrap;
+    display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
   }
   .block-actions .btn { flex: 1; min-width: 100px; }
 
   /* Edit mode */
   .edit-mode {
-    background: var(--card-alt);
-    border-radius: 12px;
-    padding: 14px;
-    margin-top: 10px;
+    background: var(--card-alt); border-radius: 12px; padding: 14px; margin-top: 10px;
   }
   .edit-mode label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: block;
-    margin-bottom: 8px;
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;
   }
   .edit-inputs {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+    display: flex; gap: 10px; align-items: center;
   }
   .edit-inputs input[type="number"] {
-    width: 80px;
-    padding: 10px;
-    border: 2px solid var(--accent);
-    border-radius: 10px;
-    font-size: 18px;
-    font-weight: 700;
-    text-align: center;
-    font-family: inherit;
-    -webkit-appearance: none;
+    width: 80px; padding: 10px; border: 2px solid var(--accent);
+    border-radius: 10px; font-size: 18px; font-weight: 700;
+    text-align: center; font-family: inherit; -webkit-appearance: none;
   }
-  .edit-inputs span {
-    font-size: 14px;
-    color: var(--text-light);
-    font-weight: 600;
-  }
-  .edit-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-  }
-
-  /* Controls */
-  .controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-  }
-  .controls .btn { flex: 1; padding: 16px; font-size: 16px; }
+  .edit-inputs span { font-size: 14px; color: var(--text-light); font-weight: 600; }
+  .edit-actions { display: flex; gap: 8px; margin-top: 10px; }
 
   /* Stats */
   .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
   }
   .stat-box {
     background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
-    border-radius: 16px;
-    padding: 18px;
-    text-align: center;
-    border: 1px solid #333;
+    border-radius: 16px; padding: 18px; text-align: center; border: 1px solid #333;
   }
   .stat-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--primary);
-    font-variant-numeric: tabular-nums;
+    font-size: 28px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums;
   }
   .stat-value.blue { color: var(--accent); }
   .stat-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 600;
+    font-size: 11px; color: var(--text-muted); margin-top: 4px;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
   }
 
   /* Settings */
   .setting-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
   }
   .setting-row:last-child { border-bottom: none; }
   .setting-label { font-size: 14px; font-weight: 600; color: var(--text); }
-  .setting-input {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .setting-input { display: flex; align-items: center; gap: 8px; }
   .setting-input input {
-    width: 70px;
-    padding: 10px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 700;
-    text-align: center;
-    font-family: inherit;
-    -webkit-appearance: none;
+    width: 70px; padding: 10px; border: 2px solid var(--border);
+    border-radius: 10px; font-size: 16px; font-weight: 700;
+    text-align: center; font-family: inherit; -webkit-appearance: none;
   }
   .setting-input span { font-size: 12px; color: var(--text-light); font-weight: 600; }
 
   /* History */
   .history-item {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
+    padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px;
   }
   .history-item:last-child { border-bottom: none; }
   .history-date { font-weight: 700; color: var(--text); font-size: 14px; }
   .history-detail { color: var(--text-light); margin-top: 4px; line-height: 1.5; }
 
-  /* Alert banner */
-  .alert-banner {
-    background: linear-gradient(135deg, var(--warning-bg), #fff8e1);
-    border: 2px solid var(--warning);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 14px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #e65100;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .alert-banner button {
-    margin-left: auto;
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-
   /* Toast */
   .toast {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
+    position: fixed; bottom: 100px; left: 50%;
     transform: translateX(-50%) translateY(100px);
-    background: var(--primary);
-    color: #000;
-    padding: 14px 28px;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 700;
-    z-index: 1000;
-    opacity: 0;
-    transition: all 0.3s;
-    pointer-events: none;
-    white-space: nowrap;
+    background: var(--primary); color: #000;
+    padding: 14px 28px; border-radius: 14px;
+    font-size: 15px; font-weight: 700; z-index: 1000;
+    opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap;
     box-shadow: 0 4px 20px rgba(0,200,83,0.3);
   }
-  .toast.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-  .toast.blue {
-    background: var(--accent);
-    color: white;
-    box-shadow: 0 4px 20px rgba(41,98,255,0.3);
-  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.blue { background: var(--accent); color: white; box-shadow: 0 4px 20px rgba(41,98,255,0.3); }
+  .toast.alert { background: var(--alert); color: white; box-shadow: 0 4px 20px rgba(255,61,0,0.3); }
 
   /* Tab bar */
   .tab-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(10,10,10,0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid #333;
-    display: flex;
-    justify-content: space-around;
-    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
-    z-index: 100;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,10,0.95); backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px); border-top: 1px solid #333;
+    display: flex; justify-content: space-around;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
   }
   .tab-btn {
-    background: none;
-    border: none;
-    font-size: 11px;
-    font-weight: 700;
-    color: #666;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 20px;
-    font-family: inherit;
-    transition: color 0.2s;
+    background: none; border: none; font-size: 11px; font-weight: 700;
+    color: #666; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; padding: 6px 20px; font-family: inherit; transition: color 0.2s;
   }
   .tab-btn.active { color: var(--primary); }
   .tab-btn span { font-size: 22px; }
@@ -436,16 +286,8 @@
   .page.active { display: block; }
 
   .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-muted);
-    font-size: 14px;
-  }
-
-  .divider {
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--border), transparent);
-    margin: 16px 0;
+    text-align: center; padding: 40px 20px;
+    color: var(--text-muted); font-size: 14px;
   }
 
   @supports (padding-top: env(safe-area-inset-top)) {
@@ -460,9 +302,11 @@
   <h1>🌙 Baby Sleep</h1>
   <p class="subtitle">Tracker de sueño inteligente</p>
 
-  <!-- Alert for notifications -->
-  <div class="alert-banner" id="alertBanner" style="display:none;">
-    <span>🔔 Las notificaciones nativas no funcionan en iOS. Usa la app con la pantalla activa o añádela a inicio.</span>
+  <!-- Countdown Alert -->
+  <div class="countdown-banner" id="countdownBanner" style="display:none;">
+    <div class="countdown-label">⏰ Próxima siesta en</div>
+    <div class="countdown-time" id="countdownTime">--:--</div>
+    <div class="countdown-event" id="countdownEvent">--</div>
   </div>
 
   <!-- PAGE: TODAY -->
@@ -578,6 +422,24 @@
     </div>
 
     <div class="card card-dark">
+      <div class="section-title alert">🔔 Alertas</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+        En iOS las notificaciones push no funcionan en web apps. Activa estas alternativas:
+      </p>
+      <div class="controls">
+        <button class="btn btn-warning" onclick="toggleVibration()" id="vibBtn" style="flex:1;">
+          📳 Vibración: OFF
+        </button>
+        <button class="btn btn-warning" onclick="toggleSound()" id="soundBtn" style="flex:1;">
+          🔊 Sonido: OFF
+        </button>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">
+        ℹ️ Mantén la app abierta o en segundo plano reciente para que funcionen.
+      </p>
+    </div>
+
+    <div class="card card-dark">
       <div class="section-title">🗑️ Datos</div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
         Esto borrará todo el historial y la configuración guardada.
@@ -620,9 +482,77 @@ let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
 let editingBlockIndex = null;
+let vibrationEnabled = false;
+let soundEnabled = false;
+let alertTimer = null;
+let lastAlertedBlock = -1;
+
+// ─── AUDIO CONTEXT FOR SOUND ───
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+function playAlertSound() {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.5);
+    // Second beep
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.frequency.value = 1100;
+    osc2.type = 'sine';
+    gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.3);
+    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+    osc2.start(audioCtx.currentTime + 0.3);
+    osc2.stop(audioCtx.currentTime + 0.8);
+  } catch(e) {}
+}
+
+// ─── VIBRATION ───
+function doVibrate() {
+  if (!vibrationEnabled) return;
+  if (navigator.vibrate) {
+    navigator.vibrate([200, 100, 200, 100, 400]);
+  }
+}
+
+// ─── TOGGLES ───
+function toggleVibration() {
+  vibrationEnabled = !vibrationEnabled;
+  document.getElementById('vibBtn').textContent = '📳 Vibración: ' + (vibrationEnabled ? 'ON' : 'OFF');
+  showToast(vibrationEnabled ? '📳 Vibración activada' : '📳 Vibración desactivada');
+}
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  initAudio();
+  document.getElementById('soundBtn').textContent = '🔊 Sonido: ' + (soundEnabled ? 'ON' : 'OFF');
+  showToast(soundEnabled ? '🔊 Sonido activado' : '🔊 Sonido desactivado');
+  if (soundEnabled) playAlertSound();
+}
 
 // ─── HELPERS ───
 function pad(n) { return n.toString().padStart(2,'0'); }
+
+// FIX: Get Chile local time correctly
+function getChileNow() {
+  const now = new Date();
+  // Chile timezone is America/Santiago
+  const chileTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+  return chileTime;
+}
 function timeToMinutes(t) {
   const [h,m] = t.split(':').map(Number);
   return h*60 + m;
@@ -639,13 +569,13 @@ function formatDuration(mins) {
   return `${h}h ${m}min`;
 }
 function getNowMinutes() {
-  const now = new Date();
-  return now.getHours()*60 + now.getMinutes();
+  const chile = getChileNow();
+  return chile.getHours()*60 + chile.getMinutes();
 }
-function showToast(msg, isBlue) {
+function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast' + (isBlue ? ' blue' : '');
+  t.className = 'toast' + (type === 'blue' ? ' blue' : type === 'alert' ? ' alert' : '');
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
@@ -684,8 +614,8 @@ function updateWakeDisplay() {
   document.getElementById('wakeDisplay').textContent = document.getElementById('wakeTime').value;
 }
 function setNow() {
-  const now = new Date();
-  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const chile = getChileNow();
+  const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`;
   document.getElementById('wakeTime').value = timeStr;
   updateWakeDisplay();
 }
@@ -757,7 +687,6 @@ function markDone(index) {
   actualTimes.push({ index, endTime: now });
   currentBlockIndex = index + 1;
 
-  // Update actual duration of completed block
   const actualDur = now - schedule[index].start;
   if (actualDur > 0) {
     schedule[index].actualDur = actualDur;
@@ -765,7 +694,6 @@ function markDone(index) {
     schedule[index].edited = true;
   }
 
-  // Recalc remaining blocks
   let t = now;
   for (let i = index + 1; i < schedule.length; i++) {
     const dur = schedule[i].actualDur;
@@ -784,16 +712,14 @@ function startEdit(index) {
   editingBlockIndex = index;
   render();
 }
-
 function cancelEdit() {
   editingBlockIndex = null;
   render();
 }
-
 function saveEdit(index) {
   const newDur = parseInt(document.getElementById(`edit-dur-${index}`).value);
   if (isNaN(newDur) || newDur < 5) {
-    showToast('❌ Duración inválida', true);
+    showToast('❌ Duración inválida', 'blue');
     return;
   }
 
@@ -823,6 +749,51 @@ function saveDay() {
   localStorage.removeItem('babySleepToday');
   renderHistory();
   showToast('✅ Día guardado en historial');
+}
+
+// ─── ALERT SYSTEM ───
+function checkAlerts() {
+  if (schedule.length === 0) return;
+  const now = getNowMinutes();
+
+  // Find next upcoming sleep block
+  let nextSleep = null;
+  for (let i = currentBlockIndex; i < schedule.length - 1; i++) {
+    if (schedule[i].type === 'sleep' && schedule[i].start > now) {
+      nextSleep = schedule[i];
+      break;
+    }
+  }
+
+  const banner = document.getElementById('countdownBanner');
+  const timeEl = document.getElementById('countdownTime');
+  const eventEl = document.getElementById('countdownEvent');
+
+  if (nextSleep) {
+    const diff = nextSleep.start - now;
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    timeEl.textContent = hours > 0 ? `${hours}h ${pad(mins)}min` : `${mins}min`;
+    eventEl.textContent = nextSleep.label;
+    banner.style.display = 'block';
+
+    // Alert at 10 min before
+    if (diff <= 10 && diff > 0 && lastAlertedBlock !== nextSleep.index) {
+      lastAlertedBlock = nextSleep.index;
+      doVibrate();
+      playAlertSound();
+      showToast(`🔔 ${nextSleep.label} en ${diff} min`, 'alert');
+    }
+    // Alert at exact time
+    if (diff === 0 && lastAlertedBlock !== nextSleep.index + 100) {
+      lastAlertedBlock = nextSleep.index + 100;
+      doVibrate();
+      playAlertSound();
+      showToast(`🔔 ¡Es hora de ${nextSleep.label}!`, 'alert');
+    }
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 // ─── RENDER ───
@@ -864,7 +835,6 @@ function render() {
         <span class="block-status ${statusClass}">${statusText}</span>
     `;
 
-    // Edit mode
     if (isEditing) {
       html += `
         <div class="edit-mode">
@@ -881,7 +851,6 @@ function render() {
       `;
     }
 
-    // Actions for current/upcoming blocks
     if (!isDone && !isEditing && !isNight) {
       html += `
         <div class="block-actions">
@@ -895,7 +864,6 @@ function render() {
       `;
     }
 
-    // Edit button for past blocks too
     if ((isDone || isPast) && !isEditing && !isNight) {
       html += `
         <div class="block-actions">
@@ -909,7 +877,6 @@ function render() {
     html += `</div>`;
   });
 
-  // Add save day button at the end
   if (currentBlockIndex >= schedule.length - 1) {
     html += `
       <div style="margin-top:20px;text-align:center;">
@@ -922,11 +889,12 @@ function render() {
 
   timeline.innerHTML = html;
 
-  // Update stats
   document.getElementById('statAwake').textContent = formatDuration(totalAwake);
   document.getElementById('statSleep').textContent = formatDuration(totalSleep);
   document.getElementById('statNaps').textContent = napCount;
   document.getElementById('statBedtime').textContent = minutesToTime(schedule[schedule.length-2].end);
+
+  checkAlerts();
 }
 
 function renderHistory() {
@@ -959,7 +927,6 @@ function applySettings() {
   saveSettings();
   showToast('✅ Ajustes guardados');
 }
-
 function resetDefaults() {
   settings = { ...DEFAULTS };
   document.getElementById('w1').value = DEFAULTS.w1;
@@ -972,7 +939,6 @@ function resetDefaults() {
   saveSettings();
   showToast('Restablecido');
 }
-
 function clearAllData() {
   if (!confirm('¿Borrar TODO el historial, configuración y rutina actual?')) return;
   localStorage.clear();
@@ -981,6 +947,9 @@ function clearAllData() {
   currentBlockIndex = 0;
   actualTimes = [];
   editingBlockIndex = null;
+  vibrationEnabled = false;
+  soundEnabled = false;
+  lastAlertedBlock = -1;
   document.getElementById('w1').value = DEFAULTS.w1;
   document.getElementById('n1').value = DEFAULTS.n1;
   document.getElementById('w2').value = DEFAULTS.w2;
@@ -990,6 +959,9 @@ function clearAllData() {
   document.getElementById('w4').value = DEFAULTS.w4;
   document.getElementById('timelineCard').style.display = 'none';
   document.getElementById('statsCard').style.display = 'none';
+  document.getElementById('countdownBanner').style.display = 'none';
+  document.getElementById('vibBtn').textContent = '📳 Vibración: OFF';
+  document.getElementById('soundBtn').textContent = '🔊 Sonido: OFF';
   renderHistory();
   showToast('🗑️ Todo borrado');
 }
@@ -1005,7 +977,6 @@ function switchTab(tab) {
 
 // ─── INIT ───
 function init() {
-  // Load settings into inputs
   document.getElementById('w1').value = settings.w1;
   document.getElementById('n1').value = settings.n1;
   document.getElementById('w2').value = settings.w2;
@@ -1014,11 +985,11 @@ function init() {
   document.getElementById('n3').value = settings.n3;
   document.getElementById('w4').value = settings.w4;
 
-  // Check iOS and show alert
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  if (isIOS) {
-    document.getElementById('alertBanner').style.display = 'flex';
-  }
+  // Set wake time to Chile current time
+  const chile = getChileNow();
+  const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`;
+  document.getElementById('wakeTime').value = timeStr;
+  updateWakeDisplay();
 
   // Restore today's state if same day
   const todayState = loadTodayState();
@@ -1036,10 +1007,13 @@ function init() {
 
   renderHistory();
 
-  // Auto refresh every minute
-  setInterval(() => {
-    if (schedule.length > 0) render();
-  }, 60000);
+  // Check alerts every 10 seconds
+  alertTimer = setInterval(() => {
+    if (schedule.length > 0) {
+      render();
+      checkAlerts();
+    }
+  }, 10000);
 }
 
 init();
