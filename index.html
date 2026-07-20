@@ -756,40 +756,43 @@ function checkAlerts() {
   if (schedule.length === 0) return;
   const now = getNowMinutes();
 
-  // Find next upcoming sleep block
-  let nextSleep = null;
-  for (let i = currentBlockIndex; i < schedule.length - 1; i++) {
-    if (schedule[i].type === 'sleep' && schedule[i].start > now) {
-      nextSleep = schedule[i];
-      break;
-    }
+  // Find current or next block
+  let nextBlock = null;
+  if (currentBlockIndex < schedule.length) {
+    nextBlock = schedule[currentBlockIndex];
   }
 
   const banner = document.getElementById('countdownBanner');
   const timeEl = document.getElementById('countdownTime');
   const eventEl = document.getElementById('countdownEvent');
 
-  if (nextSleep) {
-    const diff = nextSleep.start - now;
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    timeEl.textContent = hours > 0 ? `${hours}h ${pad(mins)}min` : `${mins}min`;
-    eventEl.textContent = nextSleep.label;
+  if (nextBlock) {
+    const diff = nextBlock.start - now;
+    const hours = Math.floor(Math.abs(diff) / 60);
+    const mins = Math.abs(diff) % 60;
+
+    if (diff > 0) {
+      timeEl.textContent = hours > 0 ? `${hours}h ${pad(mins)}min` : `${mins}min`;
+      eventEl.textContent = `Falta para ${nextBlock.label}`;
+    } else {
+      timeEl.textContent = '¡AHORA!';
+      eventEl.textContent = nextBlock.label;
+    }
     banner.style.display = 'block';
 
     // Alert at 10 min before
-    if (diff <= 10 && diff > 0 && lastAlertedBlock !== nextSleep.index) {
-      lastAlertedBlock = nextSleep.index;
+    if (diff <= 10 && diff > 0 && lastAlertedBlock !== nextBlock.index) {
+      lastAlertedBlock = nextBlock.index;
       doVibrate();
       playAlertSound();
-      showToast(`🔔 ${nextSleep.label} en ${diff} min`, 'alert');
+      showToast(`🔔 ${nextBlock.label} en ${diff} min`, 'alert');
     }
-    // Alert at exact time
-    if (diff === 0 && lastAlertedBlock !== nextSleep.index + 100) {
-      lastAlertedBlock = nextSleep.index + 100;
+    // Alert when time is up
+    if (diff <= 0 && diff > -2 && lastAlertedBlock !== nextBlock.index + 100) {
+      lastAlertedBlock = nextBlock.index + 100;
       doVibrate();
       playAlertSound();
-      showToast(`🔔 ¡Es hora de ${nextSleep.label}!`, 'alert');
+      showToast(`🔔 ¡Es hora de ${nextBlock.label}!`, 'alert');
     }
   } else {
     banner.style.display = 'none';
@@ -805,9 +808,8 @@ function render() {
   let totalAwake = 0, totalSleep = 0, napCount = 0;
 
   schedule.forEach((block, i) => {
-    const isPast = block.end < now;
-    const isCurrent = block.start <= now && block.end >= now;
     const isDone = i < currentBlockIndex;
+    const isCurrent = i === currentBlockIndex;
     const isNight = i === schedule.length - 1;
     const isEditing = editingBlockIndex === i;
 
@@ -818,7 +820,6 @@ function render() {
     let statusText = 'Próximo';
     if (isDone) { statusClass = 'status-done'; statusText = '✓ Completado'; }
     else if (isCurrent) { statusClass = 'status-active'; statusText = '⏳ Ahora'; }
-    else if (isPast) { statusClass = 'status-done'; statusText = 'Pasado'; }
     if (block.edited && !isDone) { statusClass = 'status-edited'; statusText = '✎ Editado'; }
 
     const timeRange = `${minutesToTime(block.start)} - ${minutesToTime(block.end)}`;
@@ -826,7 +827,7 @@ function render() {
     const plannedText = block.edited ? ` (plan: ${formatDuration(block.plannedDur)})` : '';
 
     html += `
-      <div class="block ${block.type} ${isDone || isPast ? 'past' : ''} ${isCurrent ? 'current' : ''} ${isEditing ? 'editing' : ''}">
+      <div class="block ${block.type} ${isDone ? 'past' : ''} ${isCurrent ? 'current' : ''} ${isEditing ? 'editing' : ''}">
         <div class="block-header">
           <span class="block-type">${block.label}</span>
           <span class="block-time">${timeRange}</span>
