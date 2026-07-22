@@ -9,6 +9,12 @@
 <meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌙%3C/text%3E%3C/svg%3E">
 <title>Baby Sleep Tracker</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
 <style>
   :root {
     --bg: #0a0a0a; --card: #ffffff; --card-alt: #f5f5f5;
@@ -59,16 +65,16 @@
   .btn-small { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
   .btn-danger { background: var(--danger); color: white; }
   .btn-warning { background: var(--warning); color: #000; }
-  .btn-alert { background: var(--alert); color: white; }
+  .btn-alert { background: var(--alert); color: #000; }
 
   .countdown-banner {
     background: linear-gradient(135deg, var(--alert), #ff9800); border-radius: 16px;
     padding: 16px; margin-bottom: 14px; text-align: center; animation: pulse-alert 2s infinite;
   }
   @keyframes pulse-alert { 0%,100%{box-shadow:0 0 0 0 rgba(255,193,7,0.4)} 50%{box-shadow:0 0 0 8px rgba(255,193,7,0)} }
-  .countdown-banner .countdown-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.8); margin-bottom: 4px; }
-  .countdown-banner .countdown-time { font-size: 36px; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
-  .countdown-banner .countdown-event { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); margin-top: 4px; }
+  .countdown-banner .countdown-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(0,0,0,0.6); margin-bottom: 4px; }
+  .countdown-banner .countdown-time { font-size: 36px; font-weight: 800; color: #000; font-variant-numeric: tabular-nums; }
+  .countdown-banner .countdown-event { font-size: 14px; font-weight: 600; color: rgba(0,0,0,0.8); margin-top: 4px; }
 
   .timeline { position: relative; padding-left: 32px; }
   .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, var(--primary), var(--accent)); border-radius: 2px; }
@@ -97,7 +103,6 @@
   .block-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .block-actions .btn { flex: 1; min-width: 100px; }
 
-  /* Edit hours mode */
   .edit-mode { background: var(--card-alt); border-radius: 12px; padding: 14px; margin-top: 10px; }
   .edit-mode label { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px; }
   .edit-hours { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
@@ -134,7 +139,7 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   .toast.blue { background: var(--accent); color: white; box-shadow: 0 4px 20px rgba(41,98,255,0.3); }
-  .toast.alert { background: var(--alert); color: white; box-shadow: 0 4px 20px rgba(255,193,7,0.3); }
+  .toast.alert { background: var(--alert); color: #000; box-shadow: 0 4px 20px rgba(255,193,7,0.3); }
 
   .tab-bar {
     position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95);
@@ -149,6 +154,16 @@
   .page.active { display: block; }
   .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
 
+  .auth-card { text-align: center; padding: 40px 20px; }
+  .auth-card h2 { color: var(--primary); font-size: 22px; margin-bottom: 8px; }
+  .auth-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .user-info { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #1a1a1a; border-radius: 14px; margin-bottom: 16px; }
+  .user-info img { width: 36px; height: 36px; border-radius: 50%; }
+  .user-info span { color: var(--text-muted); font-size: 14px; font-weight: 600; }
+  .sync-status { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; }
+  .sync-status.online { color: var(--primary); }
+  .sync-status.offline { color: var(--warning); }
+
   @supports (padding-top: env(safe-area-inset-top)) { body { padding-top: max(16px, env(safe-area-inset-top)); } }
 </style>
 <base target="_blank">
@@ -158,6 +173,30 @@
 <div class="container">
   <h1>🌙 Baby Sleep</h1>
   <p class="subtitle">Tracker de sueño inteligente</p>
+
+  <!-- Auth Section -->
+  <div class="card card-dark" id="authCard">
+    <div class="auth-card">
+      <h2>👋 Bienvenido</h2>
+      <p>Inicia sesión para sincronizar tus datos en la nube</p>
+      <button class="btn btn-accent" onclick="signInWithGoogle()" style="width:100%;padding:16px;font-size:16px;">
+        🔑 Iniciar sesión con Google
+      </button>
+    </div>
+  </div>
+
+  <!-- User Info (hidden initially) -->
+  <div class="card card-dark" id="userCard" style="display:none;">
+    <div class="user-info">
+      <img id="userPhoto" src="" alt="">
+      <span id="userName">Usuario</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline btn-small" onclick="signOut()" style="flex:1;">Cerrar sesión</button>
+      <button class="btn btn-primary btn-small" onclick="forceSync()" style="flex:1;">🔄 Sincronizar</button>
+    </div>
+    <div class="sync-status" id="syncStatus">Conectando...</div>
+  </div>
 
   <div class="countdown-banner" id="countdownBanner" style="display:none;">
     <div class="countdown-label">⏰ Próximo bloque en</div>
@@ -239,16 +278,41 @@
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab('today')"><span>📋</span>Hoy</button>
-  <button class="tab-btn" onclick="switchTab('history')"><span>📈</span>Historial</button>
-  <button class="tab-btn" onclick="switchTab('settings')"><span>⚙️</span>Ajustes</button>
+  <button class="tab-btn active" onclick="switchTab('today')" id="tab-today"><span>📋</span>Hoy</button>
+  <button class="tab-btn" onclick="switchTab('history')" id="tab-history"><span>📈</span>Historial</button>
+  <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings"><span>⚙️</span>Ajustes</button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBPMC66YAtWcrV-UnPcKWGP-ZYs8-jgWR8",
+  authDomain: "baby-sleep-tracker-32717.firebaseapp.com",
+  projectId: "baby-sleep-tracker-32717",
+  storageBucket: "baby-sleep-tracker-32717.firebasestorage.app",
+  messagingSenderId: "613276258453",
+  appId: "1:613276258453:web:165d74c31c24522d114b9c"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Enable offline persistence
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+  console.warn('Persistence failed:', err.code);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════════════
 const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180 };
-let settings = loadSettings();
+let settings = { ...DEFAULTS };
 let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
@@ -257,8 +321,284 @@ let vibrationEnabled = false;
 let soundEnabled = false;
 let alertTimer = null;
 let lastAlertedBlock = -1;
+let currentUser = null;
+let isOnline = navigator.onLine;
+let pendingSync = false;
 
-// ─── AUDIO ───
+// ═══════════════════════════════════════════════════════════════
+// AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    showToast('❌ Error al iniciar sesión: ' + err.message, 'alert');
+  });
+}
+
+function signOut() {
+  auth.signOut().then(() => {
+    showToast('👋 Sesión cerrada');
+    resetLocalState();
+  });
+}
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  updateAuthUI();
+  if (user) {
+    showToast('✅ Conectado como ' + user.displayName);
+    loadFromFirestore();
+  } else {
+    loadFromLocalStorage();
+  }
+});
+
+function updateAuthUI() {
+  const authCard = document.getElementById('authCard');
+  const userCard = document.getElementById('userCard');
+  const syncStatus = document.getElementById('syncStatus');
+  
+  if (currentUser) {
+    authCard.style.display = 'none';
+    userCard.style.display = 'block';
+    document.getElementById('userName').textContent = currentUser.displayName || 'Usuario';
+    document.getElementById('userPhoto').src = currentUser.photoURL || '';
+    syncStatus.textContent = isOnline ? '☁️ Sincronizado con la nube' : '📴 Modo offline';
+    syncStatus.className = 'sync-status ' + (isOnline ? 'online' : 'offline');
+  } else {
+    authCard.style.display = 'block';
+    userCard.style.display = 'none';
+  }
+}
+
+function resetLocalState() {
+  schedule = [];
+  currentBlockIndex = 0;
+  actualTimes = [];
+  editingBlockIndex = null;
+  settings = { ...DEFAULTS };
+  document.getElementById('timelineCard').style.display = 'none';
+  document.getElementById('statsCard').style.display = 'none';
+  document.getElementById('countdownBanner').style.display = 'none';
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FIRESTORE OPERATIONS
+// ═══════════════════════════════════════════════════════════════
+function getUserRef() {
+  if (!currentUser) return null;
+  return db.collection('users').doc(currentUser.uid);
+}
+
+async function saveToFirestore() {
+  if (!currentUser || !isOnline) {
+    pendingSync = true;
+    return false;
+  }
+  
+  const userRef = getUserRef();
+  const todayStr = new Date().toDateString();
+  
+  const data = {
+    settings: settings,
+    today: {
+      wakeTime: document.getElementById('wakeTime').value,
+      schedule: schedule,
+      currentBlockIndex: currentBlockIndex,
+      actualTimes: actualTimes,
+      date: todayStr,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    },
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  
+  try {
+    await userRef.set(data, { merge: true });
+    pendingSync = false;
+    updateSyncStatus('☁️ Guardado en la nube', true);
+    return true;
+  } catch (err) {
+    console.error('Firestore save error:', err);
+    pendingSync = true;
+    updateSyncStatus('❌ Error al guardar', false);
+    return false;
+  }
+}
+
+async function loadFromFirestore() {
+  if (!currentUser) return;
+  
+  const userRef = getUserRef();
+  try {
+    const doc = await userRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      
+      // Load settings
+      if (data.settings) {
+        settings = { ...DEFAULTS, ...data.settings };
+        document.getElementById('w1').value = settings.w1;
+        document.getElementById('n1').value = settings.n1;
+        document.getElementById('w2').value = settings.w2;
+        document.getElementById('n2').value = settings.n2;
+        document.getElementById('w3').value = settings.w3;
+        document.getElementById('n3').value = settings.n3;
+        document.getElementById('w4').value = settings.w4;
+      }
+      
+      // Load today's state
+      if (data.today && data.today.date === new Date().toDateString()) {
+        document.getElementById('wakeTime').value = data.today.wakeTime || '07:00';
+        updateWakeDisplay();
+        schedule = data.today.schedule || [];
+        currentBlockIndex = data.today.currentBlockIndex || 0;
+        actualTimes = data.today.actualTimes || [];
+        
+        if (schedule.length > 0) {
+          document.getElementById('timelineCard').style.display = 'block';
+          document.getElementById('statsCard').style.display = 'block';
+        }
+      }
+      
+      updateSyncStatus('☁️ Datos cargados de la nube', true);
+      render();
+      renderHistory();
+    } else {
+      // New user - save defaults
+      await saveToFirestore();
+    }
+  } catch (err) {
+    console.error('Firestore load error:', err);
+    updateSyncStatus('📴 Cargando datos locales', false);
+    loadFromLocalStorage();
+  }
+}
+
+async function saveHistoryToFirestore(entry) {
+  if (!currentUser || !isOnline) return false;
+  
+  const historyRef = getUserRef().collection('history');
+  try {
+    await historyRef.add({
+      ...entry,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return true;
+  } catch (err) {
+    console.error('History save error:', err);
+    return false;
+  }
+}
+
+async function loadHistoryFromFirestore() {
+  if (!currentUser) return [];
+  
+  const historyRef = getUserRef().collection('history');
+  try {
+    const snapshot = await historyRef.orderBy('createdAt', 'desc').limit(60).get();
+    return snapshot.docs.map(doc => doc.data());
+  } catch (err) {
+    console.error('History load error:', err);
+    return loadHistoryLocal();
+  }
+}
+
+async function forceSync() {
+  if (!currentUser) {
+    showToast('❌ Inicia sesión primero', 'alert');
+    return;
+  }
+  showToast('🔄 Sincronizando...', 'blue');
+  await saveToFirestore();
+  await loadFromFirestore();
+  showToast('✅ Sincronización completa');
+}
+
+function updateSyncStatus(text, online) {
+  const el = document.getElementById('syncStatus');
+  if (el) {
+    el.textContent = text;
+    el.className = 'sync-status ' + (online ? 'online' : 'offline');
+  }
+}
+
+// Listen for online/offline
+window.addEventListener('online', () => {
+  isOnline = true;
+  updateAuthUI();
+  if (pendingSync && currentUser) {
+    saveToFirestore();
+  }
+});
+
+window.addEventListener('offline', () => {
+  isOnline = false;
+  updateAuthUI();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// LOCAL STORAGE (FALLBACK)
+// ═══════════════════════════════════════════════════════════════
+function safeSet(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch(e) { console.warn('Storage failed:', e); return false; }
+}
+function safeGet(key, defaultVal) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : defaultVal; }
+  catch(e) { console.warn('Storage read failed:', e); return defaultVal; }
+}
+function safeRemove(key) {
+  try { localStorage.removeItem(key); return true; }
+  catch(e) { return false; }
+}
+
+function loadFromLocalStorage() {
+  settings = safeGet('babySleepSettings', { ...DEFAULTS });
+  const todayState = safeGet('babySleepToday', null);
+  const todayStr = new Date().toDateString();
+  
+  if (todayState && todayState.date === todayStr && todayState.schedule) {
+    document.getElementById('wakeTime').value = todayState.wakeTime || '07:00';
+    updateWakeDisplay();
+    schedule = todayState.schedule;
+    currentBlockIndex = todayState.currentBlockIndex || 0;
+    actualTimes = todayState.actualTimes || [];
+    if (schedule.length > 0) {
+      document.getElementById('timelineCard').style.display = 'block';
+      document.getElementById('statsCard').style.display = 'block';
+    }
+  }
+  
+  document.getElementById('w1').value = settings.w1;
+  document.getElementById('n1').value = settings.n1;
+  document.getElementById('w2').value = settings.w2;
+  document.getElementById('n2').value = settings.n2;
+  document.getElementById('w3').value = settings.w3;
+  document.getElementById('n3').value = settings.n3;
+  document.getElementById('w4').value = settings.w4;
+  
+  render();
+  renderHistory();
+}
+
+function saveToLocalStorage() {
+  safeSet('babySleepSettings', settings);
+  safeSet('babySleepToday', {
+    wakeTime: document.getElementById('wakeTime').value,
+    schedule: schedule,
+    currentBlockIndex: currentBlockIndex,
+    actualTimes: actualTimes,
+    date: new Date().toDateString()
+  });
+}
+
+function loadHistoryLocal() { return safeGet('babySleepHistory', []); }
+function saveHistoryLocal(h) { safeSet('babySleepHistory', h); }
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO & ALERTS
+// ═══════════════════════════════════════════════════════════════
 let audioCtx = null;
 function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 function playAlertSound() {
@@ -279,31 +619,50 @@ function playAlertSound() {
   } catch(e) {}
 }
 function doVibrate() { if (!vibrationEnabled) return; if (navigator.vibrate) navigator.vibrate([200,100,200,100,400]); }
-function toggleVibration() { vibrationEnabled = !vibrationEnabled; document.getElementById('vibBtn').textContent = '📳 Vibración: ' + (vibrationEnabled ? 'ON' : 'OFF'); showToast(vibrationEnabled ? '📳 Vibración activada' : '📳 Vibración desactivada'); }
-function toggleSound() { soundEnabled = !soundEnabled; initAudio(); document.getElementById('soundBtn').textContent = '🔊 Sonido: ' + (soundEnabled ? 'ON' : 'OFF'); showToast(soundEnabled ? '🔊 Sonido activado' : '🔊 Sonido desactivado'); if (soundEnabled) playAlertSound(); }
+function toggleVibration() { 
+  vibrationEnabled = !vibrationEnabled; 
+  document.getElementById('vibBtn').textContent = '📳 Vibración: ' + (vibrationEnabled ? 'ON' : 'OFF'); 
+  showToast(vibrationEnabled ? '📳 Vibración activada' : '📳 Vibración desactivada'); 
+}
+function toggleSound() { 
+  soundEnabled = !soundEnabled; 
+  initAudio(); 
+  document.getElementById('soundBtn').textContent = '🔊 Sonido: ' + (soundEnabled ? 'ON' : 'OFF'); 
+  showToast(soundEnabled ? '🔊 Sonido activado' : '🔊 Sonido desactivado'); 
+  if (soundEnabled) playAlertSound(); 
+}
 
-// ─── HELPERS ───
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
 function pad(n) { return n.toString().padStart(2,'0'); }
 function getChileNow() { return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' })); }
 function timeToMinutes(t) { const [h,m] = t.split(':').map(Number); return h*60 + m; }
 function minutesToTime(mins) { mins = ((mins % 1440) + 1440) % 1440; return `${pad(Math.floor(mins/60))}:${pad(mins%60)}`; }
 function formatDuration(mins) { const h = Math.floor(mins/60); const m = mins % 60; if (h === 0) return `${m}min`; if (m === 0) return `${h}h`; return `${h}h ${m}min`; }
 function getNowMinutes() { const chile = getChileNow(); return chile.getHours()*60 + chile.getMinutes(); }
-function showToast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast' + (type === 'blue' ? ' blue' : type === 'alert' ? ' alert' : ''); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+function showToast(msg, type) { 
+  const t = document.getElementById('toast'); 
+  t.textContent = msg; 
+  t.className = 'toast' + (type === 'blue' ? ' blue' : type === 'alert' ? ' alert' : ''); 
+  t.classList.add('show'); 
+  setTimeout(() => t.classList.remove('show'), 2500); 
+}
 
-// ─── STORAGE ───
-function loadSettings() { const saved = localStorage.getItem('babySleepSettings'); return saved ? JSON.parse(saved) : { ...DEFAULTS }; }
-function saveSettings() { localStorage.setItem('babySleepSettings', JSON.stringify(settings)); }
-function loadHistory() { return JSON.parse(localStorage.getItem('babySleepHistory') || '[]'); }
-function saveHistory(h) { localStorage.setItem('babySleepHistory', JSON.stringify(h)); }
-function loadTodayState() { const saved = localStorage.getItem('babySleepToday'); if (!saved) return null; return JSON.parse(saved); }
-function saveTodayState() { localStorage.setItem('babySleepToday', JSON.stringify({ wakeTime: document.getElementById('wakeTime').value, schedule: schedule, currentBlockIndex, actualTimes, date: new Date().toDateString() })); }
-
-// ─── WAKE TIME ───
+// ═══════════════════════════════════════════════════════════════
+// WAKE TIME
+// ═══════════════════════════════════════════════════════════════
 function updateWakeDisplay() { document.getElementById('wakeDisplay').textContent = document.getElementById('wakeTime').value; }
-function setNow() { const chile = getChileNow(); const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`; document.getElementById('wakeTime').value = timeStr; updateWakeDisplay(); }
+function setNow() { 
+  const chile = getChileNow(); 
+  const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`; 
+  document.getElementById('wakeTime').value = timeStr; 
+  updateWakeDisplay(); 
+}
 
-// ─── BUILD SCHEDULE ───
+// ═══════════════════════════════════════════════════════════════
+// BUILD SCHEDULE
+// ═══════════════════════════════════════════════════════════════
 function buildSchedule(wakeMinutes) {
   const blocks = []; let t = wakeMinutes;
   const seq = [
@@ -324,20 +683,30 @@ function buildSchedule(wakeMinutes) {
 }
 
 function generateSchedule() {
-  const wakeStr = document.getElementById('wakeTime').value;
-  const wakeMins = timeToMinutes(wakeStr);
-  schedule = buildSchedule(wakeMins);
-  currentBlockIndex = 0;
-  actualTimes = [];
-  editingBlockIndex = null;
-  document.getElementById('timelineCard').style.display = 'block';
-  document.getElementById('statsCard').style.display = 'block';
-  saveTodayState();
-  render();
-  showToast('📅 Rutina generada');
+  try {
+    const wakeStr = document.getElementById('wakeTime').value;
+    if (!wakeStr) { showToast('❌ Por favor ingresa una hora', 'alert'); return; }
+    const wakeMins = timeToMinutes(wakeStr);
+    if (isNaN(wakeMins)) { showToast('❌ Hora inválida', 'alert'); return; }
+    schedule = buildSchedule(wakeMins);
+    currentBlockIndex = 0;
+    actualTimes = [];
+    editingBlockIndex = null;
+    document.getElementById('timelineCard').style.display = 'block';
+    document.getElementById('statsCard').style.display = 'block';
+    saveToLocalStorage();
+    saveToFirestore();
+    render();
+    showToast('📅 Rutina generada');
+  } catch(e) {
+    console.error('Error generating schedule:', e);
+    showToast('❌ Error: ' + e.message, 'alert');
+  }
 }
 
-// ─── RECALC FROM EDITS ───
+// ═══════════════════════════════════════════════════════════════
+// RECALC FROM EDITS
+// ═══════════════════════════════════════════════════════════════
 function recalcFromIndex(startIdx) {
   let t = schedule[startIdx].start;
   for (let i = startIdx; i < schedule.length; i++) {
@@ -348,11 +717,14 @@ function recalcFromIndex(startIdx) {
     schedule[i].plannedDur = dur;
     t += dur;
   }
-  saveTodayState();
+  saveToLocalStorage();
+  saveToFirestore();
   render();
 }
 
-// ─── MARK DONE ───
+// ═══════════════════════════════════════════════════════════════
+// MARK DONE
+// ═══════════════════════════════════════════════════════════════
 function markDone(index) {
   const now = getNowMinutes();
   actualTimes.push({ index, endTime: now });
@@ -370,12 +742,15 @@ function markDone(index) {
     schedule[i].end = t + dur;
     t += dur;
   }
-  saveTodayState();
+  saveToLocalStorage();
+  saveToFirestore();
   render();
   showToast(index % 2 === 0 ? '💤 Siesta registrada' : '☀️ Despertar registrado');
 }
 
-// ─── EDIT HOURS ───
+// ═══════════════════════════════════════════════════════════════
+// EDIT HOURS
+// ═══════════════════════════════════════════════════════════════
 function startEdit(index) {
   editingBlockIndex = index;
   render();
@@ -401,7 +776,6 @@ function saveEdit(index) {
   schedule[index].edited = true;
   editingBlockIndex = null;
 
-  // Recalc all following blocks maintaining their durations
   let t = endMins;
   for (let i = index + 1; i < schedule.length; i++) {
     const dur = schedule[i].actualDur;
@@ -410,15 +784,17 @@ function saveEdit(index) {
     t += dur;
   }
 
-  saveTodayState();
+  saveToLocalStorage();
+  saveToFirestore();
   render();
   showToast('✅ Horas actualizadas');
 }
 
-// ─── SAVE DAY ───
-function saveDay() {
+// ═══════════════════════════════════════════════════════════════
+// SAVE DAY
+// ═══════════════════════════════════════════════════════════════
+async function saveDay() {
   const wakeStr = document.getElementById('wakeTime').value;
-  const history = loadHistory();
   const entry = {
     date: new Date().toLocaleDateString('es-ES'),
     wakeTime: wakeStr,
@@ -427,43 +803,70 @@ function saveDay() {
     totalAwake: schedule.filter(b => b.type==='awake').reduce((s,b) => s + b.actualDur, 0),
     naps: 3
   };
+  
+  // Save to local
+  const history = loadHistoryLocal();
   history.unshift(entry);
   if (history.length > 60) history.pop();
-  saveHistory(history);
-  localStorage.removeItem('babySleepToday');
+  saveHistoryLocal(history);
+  
+  // Save to Firestore
+  if (currentUser) {
+    await saveHistoryToFirestore(entry);
+  }
+  
+  safeRemove('babySleepToday');
   renderHistory();
   showToast('✅ Día guardado en historial');
 }
 
-// ─── ALERT SYSTEM ───
-function checkAlerts() {
-  if (schedule.length === 0) return;
+// ═══════════════════════════════════════════════════════════════
+// COUNTDOWN & ALERTS
+// ═══════════════════════════════════════════════════════════════
+function updateCountdown() {
+  if (schedule.length === 0 || currentBlockIndex >= schedule.length) {
+    document.getElementById('countdownBanner').style.display = 'none';
+    return;
+  }
+
   const now = getNowMinutes();
-  let nextBlock = null;
-  if (currentBlockIndex < schedule.length) nextBlock = schedule[currentBlockIndex];
+  const nextBlock = schedule[currentBlockIndex];
+  const diff = nextBlock.start - now;
 
   const banner = document.getElementById('countdownBanner');
   const timeEl = document.getElementById('countdownTime');
   const eventEl = document.getElementById('countdownEvent');
 
-  if (nextBlock) {
-    const diff = nextBlock.start - now;
-    const hours = Math.floor(Math.abs(diff) / 60);
-    const mins = Math.abs(diff) % 60;
-    if (diff > 0) { timeEl.textContent = hours > 0 ? `${hours}h ${pad(mins)}min` : `${mins}min`; eventEl.textContent = `Falta para ${nextBlock.label}`; }
-    else { timeEl.textContent = '¡AHORA!'; eventEl.textContent = nextBlock.label; }
-    banner.style.display = 'block';
+  const hours = Math.floor(Math.abs(diff) / 60);
+  const mins = Math.abs(diff) % 60;
 
-    if (diff <= 10 && diff > 0 && lastAlertedBlock !== nextBlock.index) {
-      lastAlertedBlock = nextBlock.index; doVibrate(); playAlertSound(); showToast(`🔔 ${nextBlock.label} en ${diff} min`, 'alert');
-    }
-    if (diff <= 0 && diff > -2 && lastAlertedBlock !== nextBlock.index + 100) {
-      lastAlertedBlock = nextBlock.index + 100; doVibrate(); playAlertSound(); showToast(`🔔 ¡Es hora de ${nextBlock.label}!`, 'alert');
-    }
-  } else { banner.style.display = 'none'; }
+  if (diff > 0) {
+    timeEl.textContent = hours > 0 ? `${hours}h ${pad(mins)}min` : `${mins}min`;
+    eventEl.textContent = `Falta para ${nextBlock.label}`;
+  } else if (diff > -5) {
+    timeEl.textContent = '¡AHORA!';
+    eventEl.textContent = nextBlock.label;
+  } else {
+    timeEl.textContent = '¡ATRASADO!';
+    eventEl.textContent = `${nextBlock.label} - Marca como hecho`;
+  }
+  banner.style.display = 'block';
+
+  if (diff <= 10 && diff > 0 && lastAlertedBlock !== nextBlock.index) {
+    lastAlertedBlock = nextBlock.index;
+    doVibrate(); playAlertSound();
+    showToast(`🔔 ${nextBlock.label} en ${Math.ceil(diff)} min`, 'alert');
+  }
+  if (diff <= 0 && diff > -2 && lastAlertedBlock !== nextBlock.index + 100) {
+    lastAlertedBlock = nextBlock.index + 100;
+    doVibrate(); playAlertSound();
+    showToast(`🔔 ¡Es hora de ${nextBlock.label}!`, 'alert');
+  }
 }
 
-// ─── RENDER ───
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
 function render() {
   const timeline = document.getElementById('timeline');
   const now = getNowMinutes();
@@ -523,17 +926,30 @@ function render() {
   document.getElementById('statSleep').textContent = formatDuration(totalSleep);
   document.getElementById('statNaps').textContent = napCount;
   document.getElementById('statBedtime').textContent = minutesToTime(schedule[schedule.length-2].end);
-  checkAlerts();
+
+  updateCountdown();
 }
 
-function renderHistory() {
+async function renderHistory() {
   const el = document.getElementById('history');
-  const history = loadHistory();
-  if (history.length === 0) { el.innerHTML = '<div class="empty-state">No hay registros aún.<br>Genera una rutina y guárdala al final del día.</div>'; return; }
+  let history = [];
+  
+  if (currentUser && isOnline) {
+    history = await loadHistoryFromFirestore();
+  } else {
+    history = loadHistoryLocal();
+  }
+  
+  if (history.length === 0) { 
+    el.innerHTML = '<div class="empty-state">No hay registros aún.<br>Genera una rutina y guárdala al final del día.</div>'; 
+    return; 
+  }
   el.innerHTML = history.slice(0,14).map(h => `<div class="history-item"><div class="history-date">${h.date}</div><div class="history-detail">🌅 ${h.wakeTime} · 🌙 ${h.bedtime}<br>😴 ${h.naps} siestas · 💤 ${formatDuration(h.totalSleep)} dormido · ☀️ ${formatDuration(h.totalAwake)} despierto</div></div>`).join('');
 }
 
-// ─── SETTINGS ───
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════
 function applySettings() {
   settings.w1 = parseInt(document.getElementById('w1').value) || DEFAULTS.w1;
   settings.n1 = parseInt(document.getElementById('n1').value) || DEFAULTS.n1;
@@ -542,7 +958,9 @@ function applySettings() {
   settings.w3 = parseInt(document.getElementById('w3').value) || DEFAULTS.w3;
   settings.n3 = parseInt(document.getElementById('n3').value) || DEFAULTS.n3;
   settings.w4 = parseInt(document.getElementById('w4').value) || DEFAULTS.w4;
-  saveSettings(); showToast('✅ Ajustes guardados');
+  saveToLocalStorage();
+  saveToFirestore();
+  showToast('✅ Ajustes guardados');
 }
 function resetDefaults() {
   settings = { ...DEFAULTS };
@@ -550,60 +968,81 @@ function resetDefaults() {
   document.getElementById('w2').value = DEFAULTS.w2; document.getElementById('n2').value = DEFAULTS.n2;
   document.getElementById('w3').value = DEFAULTS.w3; document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
-  saveSettings(); showToast('Restablecido');
+  saveToLocalStorage();
+  saveToFirestore();
+  showToast('Restablecido');
 }
-function clearAllData() {
+
+async function clearAllData() {
   if (!confirm('¿Borrar TODO el historial, configuración y rutina actual?')) return;
-  localStorage.clear(); settings = { ...DEFAULTS }; schedule = []; currentBlockIndex = 0; actualTimes = []; editingBlockIndex = null;
-  vibrationEnabled = false; soundEnabled = false; lastAlertedBlock = -1;
-  document.getElementById('w1').value = DEFAULTS.w1; document.getElementById('n1').value = DEFAULTS.n1;
-  document.getElementById('w2').value = DEFAULTS.w2; document.getElementById('n2').value = DEFAULTS.n2;
-  document.getElementById('w3').value = DEFAULTS.w3; document.getElementById('n3').value = DEFAULTS.n3;
+  
+  safeRemove('babySleepSettings'); 
+  safeRemove('babySleepHistory'); 
+  safeRemove('babySleepToday');
+  
+  if (currentUser) {
+    try {
+      const userRef = getUserRef();
+      await userRef.delete();
+      const historySnapshot = await userRef.collection('history').get();
+      const batch = db.batch();
+      historySnapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    } catch(e) { console.error('Clear firestore error:', e); }
+  }
+  
+  settings = { ...DEFAULTS }; 
+  schedule = []; 
+  currentBlockIndex = 0; 
+  actualTimes = [];
+  editingBlockIndex = null; 
+  vibrationEnabled = false; 
+  soundEnabled = false; 
+  lastAlertedBlock = -1;
+  document.getElementById('w1').value = DEFAULTS.w1; 
+  document.getElementById('n1').value = DEFAULTS.n1;
+  document.getElementById('w2').value = DEFAULTS.w2; 
+  document.getElementById('n2').value = DEFAULTS.n2;
+  document.getElementById('w3').value = DEFAULTS.w3; 
+  document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
   document.getElementById('timelineCard').style.display = 'none';
   document.getElementById('statsCard').style.display = 'none';
   document.getElementById('countdownBanner').style.display = 'none';
   document.getElementById('vibBtn').textContent = '📳 Vibración: OFF';
   document.getElementById('soundBtn').textContent = '🔊 Sonido: OFF';
-  renderHistory(); showToast('🗑️ Todo borrado');
+  renderHistory(); 
+  render();
+  showToast('🗑️ Todo borrado');
 }
 
-// ─── TABS ───
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
-  event.currentTarget.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'history') renderHistory();
 }
 
-// ─── INIT ───
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
 function init() {
-  document.getElementById('w1').value = settings.w1; document.getElementById('n1').value = settings.n1;
-  document.getElementById('w2').value = settings.w2; document.getElementById('n2').value = settings.n2;
-  document.getElementById('w3').value = settings.w3; document.getElementById('n3').value = settings.n3;
-  document.getElementById('w4').value = settings.w4;
-
   const chile = getChileNow();
   const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`;
   document.getElementById('wakeTime').value = timeStr;
   updateWakeDisplay();
 
-  const todayState = loadTodayState();
-  const todayStr = new Date().toDateString();
-  if (todayState && todayState.date === todayStr && todayState.schedule && todayState.schedule.length > 0) {
-    document.getElementById('wakeTime').value = todayState.wakeTime;
-    updateWakeDisplay();
-    schedule = todayState.schedule;
-    currentBlockIndex = todayState.currentBlockIndex || 0;
-    actualTimes = todayState.actualTimes || [];
-    document.getElementById('timelineCard').style.display = 'block';
-    document.getElementById('statsCard').style.display = 'block';
-    render();
-  }
-
-  renderHistory();
-  alertTimer = setInterval(() => { if (schedule.length > 0) { render(); checkAlerts(); } }, 10000);
+  // Update countdown every 10 seconds
+  alertTimer = setInterval(() => {
+    if (schedule.length > 0) {
+      render();
+      updateCountdown();
+    }
+  }, 10000);
 }
 
 init();
