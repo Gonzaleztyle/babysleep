@@ -326,6 +326,7 @@ let lastAlertedBlock = -1;
 let currentUser = null;
 let isOnline = navigator.onLine;
 let pendingSync = false;
+let isEditingWakeTime = false;
 
 // ═══════════════════════════════════════════════════════════════
 // AUTHENTICATION
@@ -656,7 +657,12 @@ function showToast(msg, type) {
 // ═══════════════════════════════════════════════════════════════
 // WAKE TIME
 // ═══════════════════════════════════════════════════════════════
-function updateWakeDisplay() { document.getElementById('wakeDisplay').textContent = document.getElementById('wakeTime').value; }
+function updateWakeDisplay() { 
+  const val = document.getElementById('wakeTime').value;
+  if (val) {
+    document.getElementById('wakeDisplay').textContent = val; 
+  }
+}
 function setNow() { 
   const chile = getChileNow(); 
   const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`; 
@@ -1069,17 +1075,21 @@ function switchTab(tab) {
 function init() {
   const chile = getChileNow();
   const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`;
-  document.getElementById('wakeTime').value = timeStr;
+  const wakeInput = document.getElementById('wakeTime');
+  wakeInput.value = timeStr;
   updateWakeDisplay();
 
-  // Better event handling for time input (fixes iOS issues)
-  const wakeInput = document.getElementById('wakeTime');
-  wakeInput.addEventListener('blur', updateWakeDisplay);
-  wakeInput.addEventListener('input', updateWakeDisplay);
+  // Better event handling for time input (fixes iOS/desktop issues)
+  wakeInput.addEventListener('focus', () => { isEditingWakeTime = true; });
+  wakeInput.addEventListener('blur', () => { 
+    isEditingWakeTime = false; 
+    updateWakeDisplay();
+  });
+  wakeInput.addEventListener('change', updateWakeDisplay);
 
-  // Update countdown every 10 seconds
+  // Update countdown every 10 seconds - but don't render if editing wake time
   alertTimer = setInterval(() => {
-    if (schedule.length > 0) {
+    if (schedule.length > 0 && !isEditingWakeTime && editingBlockIndex === null) {
       render();
       updateCountdown();
     }
