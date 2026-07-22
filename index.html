@@ -248,6 +248,17 @@
       <div class="setting-row"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3" value="135" min="30" max="300"><span>min</span></div></div>
       <div class="setting-row"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3" value="45" min="15" max="180"><span>min</span></div></div>
       <div class="setting-row"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="180" min="60" max="360"><span>min</span></div></div>
+
+      <div style="border-top:2px solid var(--border);margin:20px 0;padding-top:20px;">
+        <div class="section-title green">🎯 Rutina según edad</div>
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Basado en recomendaciones de especialistas en sueño infantil.</p>
+        <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="6" min="0" max="48"><span>meses</span></div></div>
+        <div class="controls" style="margin-top:12px;">
+          <button class="btn btn-primary" onclick="applyAgeBasedSchedule()" style="width:100%;">🎯 Aplicar tiempos recomendados</button>
+        </div>
+        <p id="ageRecommendation" style="font-size:12px;color:var(--text-muted);margin-top:10px;font-style:italic;"></p>
+      </div>
+
       <div class="controls" style="margin-top:16px;">
         <button class="btn btn-primary" onclick="applySettings()">💾 Guardar cambios</button>
         <button class="btn btn-outline" onclick="resetDefaults()">↺ Restablecer</button>
@@ -313,7 +324,7 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
-const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180 };
+const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:6 };
 let settings = { ...DEFAULTS };
 let schedule = [];
 let currentBlockIndex = 0;
@@ -448,6 +459,12 @@ async function loadFromFirestore() {
         document.getElementById('w3').value = settings.w3;
         document.getElementById('n3').value = settings.n3;
         document.getElementById('w4').value = settings.w4;
+        if (settings.babyAge) {
+          document.getElementById('babyAge').value = settings.babyAge;
+          const rec = getRecommendedSchedule(settings.babyAge);
+          document.getElementById('ageRecommendation').textContent = 
+            `💡 ${rec.naps} siesta(s) recomendada(s). ${rec.desc}`;
+        }
       }
 
       // Load today's state
@@ -582,6 +599,12 @@ function loadFromLocalStorage() {
   document.getElementById('w3').value = settings.w3;
   document.getElementById('n3').value = settings.n3;
   document.getElementById('w4').value = settings.w4;
+  if (settings.babyAge) {
+    document.getElementById('babyAge').value = settings.babyAge;
+    const rec = getRecommendedSchedule(settings.babyAge);
+    document.getElementById('ageRecommendation').textContent = 
+      `💡 ${rec.naps} siesta(s) recomendada(s). ${rec.desc}`;
+  }
 
   render();
   renderHistory();
@@ -992,6 +1015,64 @@ async function renderHistory() {
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════════
+function getRecommendedSchedule(ageMonths) {
+  // Based on Taking Cara Babies + Precious Little Sleep guidelines
+  if (ageMonths < 4) {
+    return { 
+      w1: 60, n1: 45, w2: 60, n2: 45, w3: 60, n3: 45, w4: 60,
+      naps: 4, desc: '4-5 siestas cortas, wake windows de 1-1.5h'
+    };
+  } else if (ageMonths < 6) {
+    return { 
+      w1: 90, n1: 60, w2: 105, n2: 75, w3: 120, n3: 60, w4: 150,
+      naps: 3, desc: '3-4 siestas, wake windows de 1.5-2.5h'
+    };
+  } else if (ageMonths < 9) {
+    return { 
+      w1: 120, n1: 90, w2: 150, n2: 90, w3: 180, n3: 45, w4: 210,
+      naps: 2, desc: '2-3 siestas, wake windows de 2-3h'
+    };
+  } else if (ageMonths < 12) {
+    return { 
+      w1: 180, n1: 90, w2: 210, n2: 60, w3: 240, n3: 30, w4: 270,
+      naps: 2, desc: '2 siestas, wake windows de 3-4h'
+    };
+  } else if (ageMonths < 18) {
+    return { 
+      w1: 240, n1: 120, w2: 300, n2: 30, w3: 360, n3: 0, w4: 360,
+      naps: 1, desc: '1-2 siestas, wake windows de 4-6h'
+    };
+  } else if (ageMonths < 24) {
+    return { 
+      w1: 300, n1: 120, w2: 360, n2: 0, w3: 360, n3: 0, w4: 360,
+      naps: 1, desc: '1 siesta, wake windows de 5-6h'
+    };
+  } else {
+    return { 
+      w1: 360, n1: 90, w2: 360, n2: 0, w3: 360, n3: 0, w4: 360,
+      naps: 0, desc: '0-1 siesta, wake windows de 6h+'
+    };
+  }
+}
+
+function applyAgeBasedSchedule() {
+  const age = parseInt(document.getElementById('babyAge').value) || 6;
+  const rec = getRecommendedSchedule(age);
+
+  document.getElementById('w1').value = rec.w1;
+  document.getElementById('n1').value = rec.n1;
+  document.getElementById('w2').value = rec.w2;
+  document.getElementById('n2').value = rec.n2;
+  document.getElementById('w3').value = rec.w3;
+  document.getElementById('n3').value = rec.n3;
+  document.getElementById('w4').value = rec.w4;
+
+  document.getElementById('ageRecommendation').textContent = 
+    `💡 ${rec.naps} siesta(s) recomendada(s). ${rec.desc}`;
+
+  showToast(`🎯 Tiempos aplicados para ${age} meses`);
+}
+
 function applySettings() {
   settings.w1 = parseInt(document.getElementById('w1').value) || DEFAULTS.w1;
   settings.n1 = parseInt(document.getElementById('n1').value) || DEFAULTS.n1;
@@ -1000,6 +1081,7 @@ function applySettings() {
   settings.w3 = parseInt(document.getElementById('w3').value) || DEFAULTS.w3;
   settings.n3 = parseInt(document.getElementById('n3').value) || DEFAULTS.n3;
   settings.w4 = parseInt(document.getElementById('w4').value) || DEFAULTS.w4;
+  settings.babyAge = parseInt(document.getElementById('babyAge').value) || 6;
   saveToLocalStorage();
   saveToFirestore();
   showToast('✅ Ajustes guardados');
@@ -1010,6 +1092,8 @@ function resetDefaults() {
   document.getElementById('w2').value = DEFAULTS.w2; document.getElementById('n2').value = DEFAULTS.n2;
   document.getElementById('w3').value = DEFAULTS.w3; document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
+  document.getElementById('babyAge').value = 6;
+  document.getElementById('ageRecommendation').textContent = '';
   saveToLocalStorage();
   saveToFirestore();
   showToast('Restablecido');
