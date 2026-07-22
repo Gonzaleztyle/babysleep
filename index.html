@@ -154,6 +154,7 @@
   .page.active { display: block; }
   .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
 
+  /* Auth styles */
   .auth-card { text-align: center; padding: 40px 20px; }
   .auth-card h2 { color: var(--primary); font-size: 22px; margin-bottom: 8px; }
   .auth-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
@@ -166,6 +167,7 @@
 
   @supports (padding-top: env(safe-area-inset-top)) { body { padding-top: max(16px, env(safe-area-inset-top)); } }
 </style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -357,7 +359,7 @@ function updateAuthUI() {
   const authCard = document.getElementById('authCard');
   const userCard = document.getElementById('userCard');
   const syncStatus = document.getElementById('syncStatus');
-  
+
   if (currentUser) {
     authCard.style.display = 'none';
     userCard.style.display = 'block';
@@ -396,10 +398,10 @@ async function saveToFirestore() {
     pendingSync = true;
     return false;
   }
-  
+
   const userRef = getUserRef();
   const todayStr = new Date().toDateString();
-  
+
   const data = {
     settings: settings,
     today: {
@@ -412,7 +414,7 @@ async function saveToFirestore() {
     },
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
-  
+
   try {
     await userRef.set(data, { merge: true });
     pendingSync = false;
@@ -428,13 +430,13 @@ async function saveToFirestore() {
 
 async function loadFromFirestore() {
   if (!currentUser) return;
-  
+
   const userRef = getUserRef();
   try {
     const doc = await userRef.get();
     if (doc.exists) {
       const data = doc.data();
-      
+
       // Load settings
       if (data.settings) {
         settings = { ...DEFAULTS, ...data.settings };
@@ -446,7 +448,7 @@ async function loadFromFirestore() {
         document.getElementById('n3').value = settings.n3;
         document.getElementById('w4').value = settings.w4;
       }
-      
+
       // Load today's state
       if (data.today && data.today.date === new Date().toDateString()) {
         document.getElementById('wakeTime').value = data.today.wakeTime || '07:00';
@@ -454,13 +456,13 @@ async function loadFromFirestore() {
         schedule = data.today.schedule || [];
         currentBlockIndex = data.today.currentBlockIndex || 0;
         actualTimes = data.today.actualTimes || [];
-        
+
         if (schedule.length > 0) {
           document.getElementById('timelineCard').style.display = 'block';
           document.getElementById('statsCard').style.display = 'block';
         }
       }
-      
+
       updateSyncStatus('☁️ Datos cargados de la nube', true);
       render();
       renderHistory();
@@ -477,7 +479,7 @@ async function loadFromFirestore() {
 
 async function saveHistoryToFirestore(entry) {
   if (!currentUser || !isOnline) return false;
-  
+
   const historyRef = getUserRef().collection('history');
   try {
     await historyRef.add({
@@ -493,7 +495,7 @@ async function saveHistoryToFirestore(entry) {
 
 async function loadHistoryFromFirestore() {
   if (!currentUser) return [];
-  
+
   const historyRef = getUserRef().collection('history');
   try {
     const snapshot = await historyRef.orderBy('createdAt', 'desc').limit(60).get();
@@ -557,19 +559,21 @@ function loadFromLocalStorage() {
   settings = safeGet('babySleepSettings', { ...DEFAULTS });
   const todayState = safeGet('babySleepToday', null);
   const todayStr = new Date().toDateString();
-  
-  if (todayState && todayState.date === todayStr && todayState.schedule) {
-    document.getElementById('wakeTime').value = todayState.wakeTime || '07:00';
-    updateWakeDisplay();
-    schedule = todayState.schedule;
-    currentBlockIndex = todayState.currentBlockIndex || 0;
-    actualTimes = todayState.actualTimes || [];
-    if (schedule.length > 0) {
+
+  if (todayState && todayState.date === todayStr && todayState.schedule && Array.isArray(todayState.schedule)) {
+    // Validate schedule data
+    const validSchedule = todayState.schedule.filter(b => b && typeof b === 'object' && b.hasOwnProperty('start') && b.hasOwnProperty('end'));
+    if (validSchedule.length > 0) {
+      document.getElementById('wakeTime').value = todayState.wakeTime || '07:00';
+      updateWakeDisplay();
+      schedule = validSchedule;
+      currentBlockIndex = todayState.currentBlockIndex || 0;
+      actualTimes = todayState.actualTimes || [];
       document.getElementById('timelineCard').style.display = 'block';
       document.getElementById('statsCard').style.display = 'block';
     }
   }
-  
+
   document.getElementById('w1').value = settings.w1;
   document.getElementById('n1').value = settings.n1;
   document.getElementById('w2').value = settings.w2;
@@ -577,7 +581,7 @@ function loadFromLocalStorage() {
   document.getElementById('w3').value = settings.w3;
   document.getElementById('n3').value = settings.n3;
   document.getElementById('w4').value = settings.w4;
-  
+
   render();
   renderHistory();
 }
@@ -803,18 +807,18 @@ async function saveDay() {
     totalAwake: schedule.filter(b => b.type==='awake').reduce((s,b) => s + b.actualDur, 0),
     naps: 3
   };
-  
+
   // Save to local
   const history = loadHistoryLocal();
   history.unshift(entry);
   if (history.length > 60) history.pop();
   saveHistoryLocal(history);
-  
+
   // Save to Firestore
   if (currentUser) {
     await saveHistoryToFirestore(entry);
   }
-  
+
   safeRemove('babySleepToday');
   renderHistory();
   showToast('✅ Día guardado en historial');
@@ -872,6 +876,9 @@ function render() {
   const now = getNowMinutes();
   let html = '';
   let totalAwake = 0, totalSleep = 0, napCount = 0;
+
+  // Filter out any undefined/corrupt blocks
+  schedule = schedule.filter(b => b && typeof b === 'object' && b.hasOwnProperty('start') && b.hasOwnProperty('end'));
 
   schedule.forEach((block, i) => {
     const isPast = block.end < now;
@@ -933,13 +940,13 @@ function render() {
 async function renderHistory() {
   const el = document.getElementById('history');
   let history = [];
-  
+
   if (currentUser && isOnline) {
     history = await loadHistoryFromFirestore();
   } else {
     history = loadHistoryLocal();
   }
-  
+
   if (history.length === 0) { 
     el.innerHTML = '<div class="empty-state">No hay registros aún.<br>Genera una rutina y guárdala al final del día.</div>'; 
     return; 
@@ -975,11 +982,11 @@ function resetDefaults() {
 
 async function clearAllData() {
   if (!confirm('¿Borrar TODO el historial, configuración y rutina actual?')) return;
-  
+
   safeRemove('babySleepSettings'); 
   safeRemove('babySleepHistory'); 
   safeRemove('babySleepToday');
-  
+
   if (currentUser) {
     try {
       const userRef = getUserRef();
@@ -990,7 +997,7 @@ async function clearAllData() {
       await batch.commit();
     } catch(e) { console.error('Clear firestore error:', e); }
   }
-  
+
   settings = { ...DEFAULTS }; 
   schedule = []; 
   currentBlockIndex = 0; 
