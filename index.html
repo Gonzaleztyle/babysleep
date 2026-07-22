@@ -212,7 +212,7 @@
       <div class="wake-section">
         <div class="wake-time-display" id="wakeDisplay">07:00</div>
         <div class="wake-input-row">
-          <input type="time" id="wakeTime" value="07:00" onchange="updateWakeDisplay()">
+          <input type="time" id="wakeTime" value="07:00">
           <button class="btn btn-primary" onclick="setNow()">Ahora</button>
         </div>
         <div style="margin-top:16px;">
@@ -835,7 +835,21 @@ function updateCountdown() {
 
   const now = getNowMinutes();
   const nextBlock = schedule[currentBlockIndex];
-  const diff = nextBlock.start - now;
+
+  // If we're in the middle of a block, show time until it ends
+  // If we're between blocks, show time until next block starts
+  let diff;
+  let label;
+
+  if (nextBlock.start <= now && nextBlock.end > now) {
+    // Currently inside a block - show time until it ends
+    diff = nextBlock.end - now;
+    label = `${nextBlock.label} termina en`;
+  } else {
+    // Before next block starts
+    diff = nextBlock.start - now;
+    label = `Falta para ${nextBlock.label}`;
+  }
 
   const banner = document.getElementById('countdownBanner');
   const timeEl = document.getElementById('countdownTime');
@@ -846,25 +860,22 @@ function updateCountdown() {
 
   if (diff > 0) {
     timeEl.textContent = hours > 0 ? `${hours}h ${pad(mins)}min` : `${mins}min`;
-    eventEl.textContent = `Falta para ${nextBlock.label}`;
-  } else if (diff > -5) {
-    timeEl.textContent = '¡AHORA!';
-    eventEl.textContent = nextBlock.label;
+    eventEl.textContent = label;
   } else {
-    timeEl.textContent = '¡ATRASADO!';
-    eventEl.textContent = `${nextBlock.label} - Marca como hecho`;
+    // Block just ended, move to next
+    timeEl.textContent = '...';
+    eventEl.textContent = 'Actualizando...';
   }
   banner.style.display = 'block';
 
+  // Alert 10 minutes before a block starts or ends
   if (diff <= 10 && diff > 0 && lastAlertedBlock !== nextBlock.index) {
     lastAlertedBlock = nextBlock.index;
     doVibrate(); playAlertSound();
-    showToast(`🔔 ${nextBlock.label} en ${Math.ceil(diff)} min`, 'alert');
-  }
-  if (diff <= 0 && diff > -2 && lastAlertedBlock !== nextBlock.index + 100) {
-    lastAlertedBlock = nextBlock.index + 100;
-    doVibrate(); playAlertSound();
-    showToast(`🔔 ¡Es hora de ${nextBlock.label}!`, 'alert');
+    const alertMsg = nextBlock.start <= now ? 
+      `🔔 ${nextBlock.label} termina en ${Math.ceil(diff)} min` :
+      `🔔 ${nextBlock.label} empieza en ${Math.ceil(diff)} min`;
+    showToast(alertMsg, 'alert');
   }
 }
 
@@ -879,6 +890,23 @@ function render() {
 
   // Filter out any undefined/corrupt blocks
   schedule = schedule.filter(b => b && typeof b === 'object' && b.hasOwnProperty('start') && b.hasOwnProperty('end'));
+
+  // Auto-advance: mark blocks as done based on current time
+  // A block is "done" if its end time has passed
+  // currentBlockIndex should point to the first block that hasn't ended yet
+  let newCurrentIndex = 0;
+  for (let i = 0; i < schedule.length; i++) {
+    if (schedule[i].end <= now) {
+      newCurrentIndex = i + 1;
+      // Auto-mark as done if not already
+      if (!actualTimes.find(a => a.index === i)) {
+        actualTimes.push({ index: i, endTime: schedule[i].end });
+      }
+    } else {
+      break;
+    }
+  }
+  currentBlockIndex = Math.min(newCurrentIndex, schedule.length - 1);
 
   schedule.forEach((block, i) => {
     const isPast = block.end < now;
@@ -915,7 +943,8 @@ function render() {
 
     if (!isEditing && !isNight) {
       let actions = `<div class="block-actions">`;
-      if (!isDone) {
+      // Only show manual mark button for current or upcoming blocks
+      if (!isDone && !isPast && !isCurrent) {
         actions += `<button class="btn btn-primary btn-small" onclick="markDone(${i})">${block.type === 'awake' ? '😴 Empezó siesta' : '☀️ Despertó'}</button>`;
       }
       actions += `<button class="btn btn-outline-blue btn-small" onclick="startEdit(${i})">✏️ Editar horas</button></div>`;
@@ -1042,6 +1071,11 @@ function init() {
   const timeStr = `${pad(chile.getHours())}:${pad(chile.getMinutes())}`;
   document.getElementById('wakeTime').value = timeStr;
   updateWakeDisplay();
+
+  // Better event handling for time input (fixes iOS issues)
+  const wakeInput = document.getElementById('wakeTime');
+  wakeInput.addEventListener('blur', updateWakeDisplay);
+  wakeInput.addEventListener('input', updateWakeDisplay);
 
   // Update countdown every 10 seconds
   alertTimer = setInterval(() => {
