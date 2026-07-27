@@ -369,8 +369,6 @@ let isEditingWakeTime = false;
 function checkScheduleFit() {
   const wakeStr = document.getElementById('wakeTime').value;
   const bedStr = document.getElementById('bedTime').value;
-  const age = parseInt(document.getElementById('babyAge').value) || 6;
-  const source = document.getElementById('sourceSelect').value;
 
   if (!wakeStr || !bedStr) return;
 
@@ -385,12 +383,17 @@ function checkScheduleFit() {
     totalDayMins = (bedMins + 1440) - wakeMins; // crosses midnight
   }
 
-  // Get recommended schedule
-  const rec = getRecommendedSchedule(age);
-  if (!rec) return;
+  // Get CURRENT values from inputs (not recommended, what user actually set)
+  const w1 = parseInt(document.getElementById('w1').value) || 0;
+  const n1 = parseInt(document.getElementById('n1').value) || 0;
+  const w2 = parseInt(document.getElementById('w2').value) || 0;
+  const n2 = parseInt(document.getElementById('n2').value) || 0;
+  const w3 = parseInt(document.getElementById('w3').value) || 0;
+  const n3 = parseInt(document.getElementById('n3').value) || 0;
+  const w4 = parseInt(document.getElementById('w4').value) || 0;
 
-  // Calculate total time needed by recommended schedule
-  const totalNeeded = rec.w1 + rec.n1 + rec.w2 + rec.n2 + rec.w3 + rec.n3 + rec.w4;
+  // Calculate total time needed by CURRENT schedule
+  const totalNeeded = w1 + n1 + w2 + n2 + w3 + n3 + w4;
   const diff = totalDayMins - totalNeeded;
 
   const resultDiv = document.getElementById('scheduleCheckResult');
@@ -400,32 +403,20 @@ function checkScheduleFit() {
 
   if (Math.abs(diff) <= 15) {
     // Perfect fit (within 15 min)
-    html += `<div style="color:var(--primary);font-weight:700;margin-bottom:6px;">✅ ¡Perfecto! Los tiempos recomendados cuadran con tu meta.</div>`;
-    html += `<div style="color:var(--text-muted);font-size:12px;">Tiempo disponible: ${formatDuration(totalDayMins)} | Tiempo necesario: ${formatDuration(totalNeeded)}</div>`;
+    html += `<div style="color:var(--primary);font-weight:700;margin-bottom:6px;">✅ ¡Perfecto! La rutina cuadra con tu meta.</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;">Tiempo disponible: ${formatDuration(totalDayMins)} | Tiempo de tu rutina: ${formatDuration(totalNeeded)}</div>`;
     resultDiv.style.borderColor = 'var(--primary)';
   } else if (diff > 0) {
-    // Too much time - suggest later bedtime or longer wake windows
-    const suggestedBedMins = wakeMins + totalNeeded;
-    const suggestedBed = minutesToTime(suggestedBedMins % 1440);
+    // Too much time
     html += `<div style="color:var(--warning);font-weight:700;margin-bottom:6px;">⚠️ Sobran ${formatDuration(diff)} en el día</div>`;
-    html += `<div style="color:var(--text-muted);font-size:12px;margin-bottom:8px;">Con los tiempos recomendados, el bebé estaría listo para dormir antes de tu meta.</div>`;
-    html += `<div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-top:8px;">`;
-    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">💡 Sugerencia: acostar a las</div>`;
-    html += `<div style="font-size:20px;font-weight:800;color:var(--accent);cursor:pointer;" onclick="setSuggestedBedtime('${suggestedBed}')">${suggestedBed}</div>`;
-    html += `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Pulsa para aplicar</div>`;
-    html += `</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;margin-bottom:8px;">Con tu rutina actual, el bebé estaría listo para dormir antes de las ${bedStr}.</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;">Tiempo disponible: ${formatDuration(totalDayMins)} | Tiempo de tu rutina: ${formatDuration(totalNeeded)}</div>`;
     resultDiv.style.borderColor = 'var(--warning)';
   } else {
-    // Not enough time - suggest earlier bedtime or shorter wake windows
-    const suggestedBedMins = wakeMins + totalNeeded;
-    const suggestedBed = minutesToTime(suggestedBedMins % 1440);
+    // Not enough time
     html += `<div style="color:var(--danger);font-weight:700;margin-bottom:6px;">❌ Faltan ${formatDuration(Math.abs(diff))} en el día</div>`;
-    html += `<div style="color:var(--text-muted);font-size:12px;margin-bottom:8px;">Los tiempos recomendados no caben entre el despertar y tu meta de acostar.</div>`;
-    html += `<div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-top:8px;">`;
-    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">💡 Sugerencia: acostar a las</div>`;
-    html += `<div style="font-size:20px;font-weight:800;color:var(--accent);cursor:pointer;" onclick="setSuggestedBedtime('${suggestedBed}')">${suggestedBed}</div>`;
-    html += `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Pulsa para aplicar</div>`;
-    html += `</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;margin-bottom:8px;">Tu rutina actual no cabe entre el despertar y tu meta de acostar.</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;">Tiempo disponible: ${formatDuration(totalDayMins)} | Tiempo de tu rutina: ${formatDuration(totalNeeded)}</div>`;
     resultDiv.style.borderColor = 'var(--danger)';
   }
 
@@ -435,7 +426,6 @@ function checkScheduleFit() {
 
 function setSuggestedBedtime(time) {
   document.getElementById('bedTime').value = time;
-  updateBedDisplay();
   checkScheduleFit();
   showToast(`🌙 Meta de acostar ajustada a ${time}`);
 }
@@ -1431,6 +1421,7 @@ function init() {
   wakeInput.addEventListener('blur', () => { 
     isEditingWakeTime = false; 
     updateWakeDisplay();
+    checkScheduleFit();
   });
   wakeInput.addEventListener('change', () => {
     updateWakeDisplay();
@@ -1447,6 +1438,20 @@ function init() {
     });
     bedInput.addEventListener('change', checkScheduleFit);
   }
+
+  // Listen to manual time inputs for real-time fit check
+  const timeInputs = ['w1','n1','w2','n2','w3','n3','w4'];
+  timeInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => {
+        // Only check if we're on the "today" tab and have wake time set
+        if (document.getElementById('wakeTime').value) {
+          checkScheduleFit();
+        }
+      });
+    }
+  });
 
   // Update countdown every 10 seconds - but don't render if editing wake time
   alertTimer = setInterval(() => {
