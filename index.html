@@ -215,6 +215,12 @@
           <input type="time" id="wakeTime" value="07:00">
           <button class="btn btn-primary" onclick="setNow()">Ahora</button>
         </div>
+
+        <!-- Schedule Check Result -->
+        <div id="scheduleCheckResult" style="display:none;margin-top:16px;padding:14px;background:#1a1a1a;border-radius:12px;border:1px solid #333;">
+          <div id="scheduleCheckContent" style="font-size:13px;line-height:1.6;"></div>
+        </div>
+
         <div style="margin-top:16px;">
           <button class="btn btn-accent" onclick="generateSchedule()" style="width:100%;padding:16px;font-size:16px;">📅 Generar rutina del día</button>
         </div>
@@ -250,25 +256,42 @@
       <div class="setting-row"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="180" min="60" max="360"><span>min</span></div></div>
 
       <div style="border-top:2px solid var(--border);margin:20px 0;padding-top:20px;">
-        <div class="section-title green">🎯 Rutina según edad</div>
-        <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Basado en recomendaciones de especialistas en sueño infantil.</p>
+        <div class="section-title green">🎯 Preferencias de rutina</div>
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:8px;">Configura la meta de horario y la fuente de recomendaciones.</p>
+        <p style="font-size:12px;color:var(--alert);margin-bottom:16px;font-weight:600;">⚠️ Se recomienda hacer estos cambios al comienzo del día.</p>
+
+        <div class="setting-row"><span class="setting-label">🌙 Meta: hora de acostar</span><div class="setting-input"><input type="time" id="bedTime" value="19:30" onchange="updateBedDisplay();checkScheduleFit();"><span></span></div></div>
+
+        <div class="setting-row"><span class="setting-label">Fuente</span><div class="setting-input" style="flex:1;">
+          <select id="sourceSelect" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);">
+            <option value="takingcarababies">Taking Cara Babies</option>
+            <option value="huckleberry">Huckleberry</option>
+            <option value="promedio" selected>Promedio</option>
+          </select>
+        </div></div>
+
         <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="6" min="0" max="48"><span>meses</span></div></div>
+
         <div class="controls" style="margin-top:12px;">
           <button class="btn btn-primary" onclick="applyAgeBasedSchedule()" style="width:100%;">🎯 Aplicar tiempos recomendados</button>
         </div>
-        <p id="ageRecommendation" style="font-size:12px;color:var(--text-muted);margin-top:10px;font-style:italic;"></p>
+
+        <div id="ageDetails" style="margin-top:14px;padding:14px;background:#1a1a1a;border-radius:12px;border:1px solid #333;display:none;">
+          <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">📋 Detalles de la rutina</div>
+          <div id="ageDetailContent" style="font-size:13px;color:var(--text-muted);line-height:1.6;"></div>
+        </div>
       </div>
 
-      <div class="controls" style="margin-top:16px;">
-        <button class="btn btn-primary" onclick="applySettings()">💾 Guardar cambios</button>
-        <button class="btn btn-outline" onclick="resetDefaults()">↺ Restablecer</button>
+      <div class="controls" style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="applySettings()" style="flex:1;">💾 Guardar cambios</button>
+        <button class="btn btn-outline" onclick="resetDefaults()" style="flex:1;">↺ Restablecer</button>
       </div>
     </div>
 
     <div class="card card-dark">
       <div class="section-title alert">🔔 Alertas</div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">En iOS las notificaciones push no funcionan en web apps. Activa estas alternativas:</p>
-      <div class="controls">
+      <div class="controls" style="display:flex;gap:8px;">
         <button class="btn btn-warning" onclick="toggleVibration()" id="vibBtn" style="flex:1;">📳 Vibración: OFF</button>
         <button class="btn btn-warning" onclick="toggleSound()" id="soundBtn" style="flex:1;">🔊 Sonido: OFF</button>
       </div>
@@ -324,7 +347,7 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
-const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:6 };
+const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:6, source:'promedio', bedTime:'19:30' };
 let settings = { ...DEFAULTS };
 let schedule = [];
 let currentBlockIndex = 0;
@@ -338,6 +361,89 @@ let currentUser = null;
 let isOnline = navigator.onLine;
 let pendingSync = false;
 let isEditingWakeTime = false;
+
+// ═══════════════════════════════════════════════════════════════
+// SCHEDULE FIT CHECK (Wake time + Bedtime goal)
+// ═══════════════════════════════════════════════════════════════
+
+function checkScheduleFit() {
+  const wakeStr = document.getElementById('wakeTime').value;
+  const bedStr = document.getElementById('bedTime').value;
+  const age = parseInt(document.getElementById('babyAge').value) || 6;
+  const source = document.getElementById('sourceSelect').value;
+
+  if (!wakeStr || !bedStr) return;
+
+  const wakeMins = timeToMinutes(wakeStr);
+  const bedMins = timeToMinutes(bedStr);
+
+  // Calculate total awake time available
+  let totalDayMins;
+  if (bedMins >= wakeMins) {
+    totalDayMins = bedMins - wakeMins;
+  } else {
+    totalDayMins = (bedMins + 1440) - wakeMins; // crosses midnight
+  }
+
+  // Get recommended schedule
+  const rec = getRecommendedSchedule(age);
+  if (!rec) return;
+
+  // Calculate total time needed by recommended schedule
+  const totalNeeded = rec.w1 + rec.n1 + rec.w2 + rec.n2 + rec.w3 + rec.n3 + rec.w4;
+  const diff = totalDayMins - totalNeeded;
+
+  const resultDiv = document.getElementById('scheduleCheckResult');
+  const contentDiv = document.getElementById('scheduleCheckContent');
+
+  let html = '';
+
+  if (Math.abs(diff) <= 15) {
+    // Perfect fit (within 15 min)
+    html += `<div style="color:var(--primary);font-weight:700;margin-bottom:6px;">✅ ¡Perfecto! Los tiempos recomendados cuadran con tu meta.</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;">Tiempo disponible: ${formatDuration(totalDayMins)} | Tiempo necesario: ${formatDuration(totalNeeded)}</div>`;
+    resultDiv.style.borderColor = 'var(--primary)';
+  } else if (diff > 0) {
+    // Too much time - suggest later bedtime or longer wake windows
+    const suggestedBedMins = wakeMins + totalNeeded;
+    const suggestedBed = minutesToTime(suggestedBedMins % 1440);
+    html += `<div style="color:var(--warning);font-weight:700;margin-bottom:6px;">⚠️ Sobran ${formatDuration(diff)} en el día</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;margin-bottom:8px;">Con los tiempos recomendados, el bebé estaría listo para dormir antes de tu meta.</div>`;
+    html += `<div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-top:8px;">`;
+    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">💡 Sugerencia: acostar a las</div>`;
+    html += `<div style="font-size:20px;font-weight:800;color:var(--accent);cursor:pointer;" onclick="setSuggestedBedtime('${suggestedBed}')">${suggestedBed}</div>`;
+    html += `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Pulsa para aplicar</div>`;
+    html += `</div>`;
+    resultDiv.style.borderColor = 'var(--warning)';
+  } else {
+    // Not enough time - suggest earlier bedtime or shorter wake windows
+    const suggestedBedMins = wakeMins + totalNeeded;
+    const suggestedBed = minutesToTime(suggestedBedMins % 1440);
+    html += `<div style="color:var(--danger);font-weight:700;margin-bottom:6px;">❌ Faltan ${formatDuration(Math.abs(diff))} en el día</div>`;
+    html += `<div style="color:var(--text-muted);font-size:12px;margin-bottom:8px;">Los tiempos recomendados no caben entre el despertar y tu meta de acostar.</div>`;
+    html += `<div style="background:#1a1a1a;padding:10px;border-radius:8px;margin-top:8px;">`;
+    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">💡 Sugerencia: acostar a las</div>`;
+    html += `<div style="font-size:20px;font-weight:800;color:var(--accent);cursor:pointer;" onclick="setSuggestedBedtime('${suggestedBed}')">${suggestedBed}</div>`;
+    html += `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Pulsa para aplicar</div>`;
+    html += `</div>`;
+    resultDiv.style.borderColor = 'var(--danger)';
+  }
+
+  contentDiv.innerHTML = html;
+  resultDiv.style.display = 'block';
+}
+
+function setSuggestedBedtime(time) {
+  document.getElementById('bedTime').value = time;
+  updateBedDisplay();
+  checkScheduleFit();
+  showToast(`🌙 Meta de acostar ajustada a ${time}`);
+}
+
+function updateBedDisplay() {
+  // Bedtime display was removed from main screen, now just a helper
+  // The bedtime input is in Settings
+}
 
 // ═══════════════════════════════════════════════════════════════
 // AUTHENTICATION
@@ -414,8 +520,11 @@ async function saveToFirestore() {
   const userRef = getUserRef();
   const todayStr = new Date().toDateString();
 
+  const saveSettings = { ...settings };
+  saveSettings.bedTime = document.getElementById('bedTime').value;
+
   const data = {
-    settings: settings,
+    settings: saveSettings,
     today: {
       wakeTime: document.getElementById('wakeTime').value,
       schedule: schedule,
@@ -461,9 +570,12 @@ async function loadFromFirestore() {
         document.getElementById('w4').value = settings.w4;
         if (settings.babyAge) {
           document.getElementById('babyAge').value = settings.babyAge;
-          const rec = getRecommendedSchedule(settings.babyAge);
-          document.getElementById('ageRecommendation').textContent = 
-            `💡 ${rec.naps} siesta(s) recomendada(s). ${rec.desc}`;
+        }
+        if (settings.source) {
+          document.getElementById('sourceSelect').value = settings.source;
+        }
+        if (settings.bedTime) {
+          document.getElementById('bedTime').value = settings.bedTime;
         }
       }
 
@@ -601,16 +713,23 @@ function loadFromLocalStorage() {
   document.getElementById('w4').value = settings.w4;
   if (settings.babyAge) {
     document.getElementById('babyAge').value = settings.babyAge;
-    const rec = getRecommendedSchedule(settings.babyAge);
-    document.getElementById('ageRecommendation').textContent = 
-      `💡 ${rec.naps} siesta(s) recomendada(s). ${rec.desc}`;
   }
+  if (settings.source) {
+    document.getElementById('sourceSelect').value = settings.source;
+  }
+  if (settings.bedTime) {
+    document.getElementById('bedTime').value = settings.bedTime;
+  }
+
+  // Check fit after loading everything
+  setTimeout(checkScheduleFit, 100);
 
   render();
   renderHistory();
 }
 
 function saveToLocalStorage() {
+  settings.bedTime = document.getElementById('bedTime').value;
   safeSet('babySleepSettings', settings);
   safeSet('babySleepToday', {
     wakeTime: document.getElementById('wakeTime').value,
@@ -718,9 +837,14 @@ function buildSchedule(wakeMinutes) {
 function generateSchedule() {
   try {
     const wakeStr = document.getElementById('wakeTime').value;
-    if (!wakeStr) { showToast('❌ Por favor ingresa una hora', 'alert'); return; }
+    const bedStr = document.getElementById('bedTime').value;
+    if (!wakeStr) { showToast('❌ Por favor ingresa hora de despertar', 'alert'); return; }
     const wakeMins = timeToMinutes(wakeStr);
     if (isNaN(wakeMins)) { showToast('❌ Hora inválida', 'alert'); return; }
+
+    // Check fit before generating
+    checkScheduleFit();
+
     schedule = buildSchedule(wakeMins);
     currentBlockIndex = 0;
     actualTimes = [];
@@ -1015,49 +1139,143 @@ async function renderHistory() {
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SCHEDULE DATA BY SOURCE - MONTH BY MONTH
+// Based on Taking Cara Babies + Huckleberry + Promedio
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// NIGHT SLEEP RECOMMENDATIONS (hours) by age and source
+// ═══════════════════════════════════════════════════════════════
+const NIGHT_SLEEP_DATA = {
+  takingcarababies: {
+    0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11,
+    6: 11, 7: 11, 8: 11, 9: 11, 10: 11, 11: 11,
+    12: 11.5, 13: 11.5, 14: 11.5, 15: 11.5, 16: 11.5, 17: 11.5,
+    18: 11.5, 19: 11.5, 20: 11.5, 21: 11.5, 22: 11.5, 23: 11.5,
+    24: 11
+  },
+  huckleberry: {
+    0: 10, 1: 10, 2: 10, 3: 10.5, 4: 10.5, 5: 11,
+    6: 11, 7: 11, 8: 11, 9: 11, 10: 11, 11: 11.5,
+    12: 11.5, 13: 11.5, 14: 11.5, 15: 11.5, 16: 11.5, 17: 11.5,
+    18: 11, 19: 11, 20: 11, 21: 11, 22: 11, 23: 11,
+    24: 10.5
+  }
+};
+
+function getNightSleepHours(ageMonths, source) {
+  const data = NIGHT_SLEEP_DATA[source];
+  if (!data) return 11;
+  const clampedAge = Math.max(0, Math.min(24, Math.floor(ageMonths)));
+  return data[clampedAge] || 11;
+}
+
+const SCHEDULE_DATA = {
+  takingcarababies: {
+    name: 'Taking Cara Babies',
+    // month-indexed (0-36), each entry: {w1,n1,w2,n2,w3,n3,w4,naps,desc,wwRange}
+    0:  {w1:45,n1:30,w2:45,n2:30,w3:45,n3:30,w4:45,naps:5,desc:'Recién nacido: sueño muy fragmentado',wwRange:'30-60 min'},
+    1:  {w1:60,n1:45,w2:60,n2:45,w3:60,n3:45,w4:60,naps:5,desc:'1 mes: wake windows cortos, muchas siestas',wwRange:'60-90 min'},
+    2:  {w1:75,n1:60,w2:75,n2:60,w3:75,n3:45,w4:75,naps:4,desc:'2 meses: comienza a organizarse el sueño',wwRange:'75-90 min'},
+    3:  {w1:90,n1:75,w2:90,n2:75,w3:90,n3:60,w4:90,naps:4,desc:'3 meses: regresión del sueño común',wwRange:'75-120 min'},
+    4:  {w1:105,n1:75,w2:105,n2:75,w3:105,n3:60,w4:120,naps:4,desc:'4 meses: 4 siestas, wake windows creciendo',wwRange:'1.5-2h'},
+    5:  {w1:120,n1:90,w2:120,n2:90,w3:135,n3:45,w4:150,naps:3,desc:'5 meses: transición a 3 siestas',wwRange:'2-2.5h'},
+    6:  {w1:120,n1:90,w2:135,n2:90,w3:150,n3:45,w4:165,naps:3,desc:'6 meses: 3 siestas consolidadas',wwRange:'2-2.75h'},
+    7:  {w1:135,n1:90,w2:150,n2:90,w3:165,n3:45,w4:180,naps:3,desc:'7 meses: wake windows más largos',wwRange:'2.5-3h'},
+    8:  {w1:150,n1:90,w2:165,n2:75,w3:180,n3:45,w4:195,naps:2,desc:'8 meses: transición a 2 siestas',wwRange:'2.5-3.25h'},
+    9:  {w1:165,n1:90,w2:180,n2:75,w3:195,n3:30,w4:210,naps:2,desc:'9 meses: 2 siestas bien establecidas',wwRange:'2.75-3.5h'},
+    10: {w1:180,n1:90,w2:195,n2:60,w3:210,n3:30,w4:225,naps:2,desc:'10 meses: wake windows de 3h+',wwRange:'3-3.75h'},
+    11: {w1:195,n1:90,w2:210,n2:60,w3:225,n3:30,w4:240,naps:2,desc:'11 meses: casi lista para 1 siesta',wwRange:'3-4h'},
+    12: {w1:210,n1:90,w2:240,n2:45,w3:270,n3:0,w4:270,naps:1,desc:'12 meses: transición a 1 siesta',wwRange:'3.5-4.5h'},
+    13: {w1:225,n1:105,w2:255,n2:30,w3:285,n3:0,w4:285,naps:1,desc:'13 meses: 1 siesta consolidada',wwRange:'3.5-4.5h'},
+    14: {w1:240,n1:105,w2:270,n2:30,w3:300,n3:0,w4:300,naps:1,desc:'14 meses: wake windows de 4h+',wwRange:'4-5h'},
+    15: {w1:240,n1:120,w2:270,n2:30,w3:300,n3:0,w4:300,naps:1,desc:'15 meses: 1 siesta larga',wwRange:'4-5h'},
+    16: {w1:255,n1:120,w2:285,n2:30,w3:315,n3:0,w4:315,naps:1,desc:'16 meses: wake windows creciendo',wwRange:'4-5.5h'},
+    17: {w1:270,n1:120,w2:300,n2:30,w3:330,n3:0,w4:330,naps:1,desc:'17 meses: casi lista para sin siestas',wwRange:'4.5-5.5h'},
+    18: {w1:300,n1:120,w2:330,n2:0,w3:360,n3:0,w4:360,naps:1,desc:'18 meses: 1 siesta o transición',wwRange:'5-6h'},
+    19: {w1:300,n1:105,w2:330,n2:0,w3:360,n3:0,w4:360,naps:1,desc:'19 meses: siesta opcional algunos días',wwRange:'5-6h'},
+    20: {w1:315,n1:90,w2:345,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'20 meses: algunos días sin siesta',wwRange:'5.5-6h'},
+    21: {w1:330,n1:75,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'21 meses: mayoría de días sin siesta',wwRange:'5.5-6h'},
+    22: {w1:330,n1:60,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'22 meses: casi sin siestas',wwRange:'5.5-6.5h'},
+    23: {w1:345,n1:45,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'23 meses: wake windows de adulto',wwRange:'6h+'},
+    24: {w1:360,n1:30,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'2 años: sin siestas, día completo',wwRange:'6h+'},
+  },
+  huckleberry: {
+    name: 'Huckleberry',
+    0:  {w1:60,n1:30,w2:60,n2:30,w3:60,n3:30,w4:60,naps:5,desc:'Recién nacido: sueño muy irregular',wwRange:'30-90 min'},
+    1:  {w1:60,n1:45,w2:60,n2:45,w3:60,n3:45,w4:75,naps:5,desc:'1 mes: muchas siestas cortas',wwRange:'60-90 min'},
+    2:  {w1:75,n1:60,w2:75,n2:60,w3:75,n3:45,w4:90,naps:4,desc:'2 meses: comienza a regularizarse',wwRange:'1-2h'},
+    3:  {w1:90,n1:75,w2:90,n2:75,w3:90,n3:60,w4:90,naps:4,desc:'3 meses: 4 siestas, wake windows creciendo',wwRange:'1-2h'},
+    4:  {w1:105,n1:75,w2:105,n2:75,w3:120,n3:60,w4:120,naps:4,desc:'4 meses: regresión del sueño',wwRange:'1.5-2.5h'},
+    5:  {w1:120,n1:90,w2:120,n2:90,w3:135,n3:45,w4:150,naps:3,desc:'5 meses: transición a 3 siestas',wwRange:'2-3h'},
+    6:  {w1:120,n1:90,w2:135,n2:90,w3:150,n3:45,w4:180,naps:3,desc:'6 meses: 3 siestas o transición a 2',wwRange:'2-3h'},
+    7:  {w1:135,n1:90,w2:150,n2:90,w3:165,n3:45,w4:195,naps:2,desc:'7 meses: transición a 2 siestas',wwRange:'2.5-3.5h'},
+    8:  {w1:150,n1:90,w2:165,n2:75,w3:180,n3:45,w4:210,naps:2,desc:'8 meses: 2 siestas consolidadas',wwRange:'2.5-3.5h'},
+    9:  {w1:165,n1:90,w2:180,n2:75,w3:195,n3:45,w4:210,naps:2,desc:'9 meses: wake windows de 3h',wwRange:'2.5-3.5h'},
+    10: {w1:180,n1:90,w2:195,n2:60,w3:210,n3:45,w4:240,naps:2,desc:'10 meses: 2 siestas bien establecidas',wwRange:'3-4h'},
+    11: {w1:180,n1:90,w2:210,n2:60,w3:225,n3:30,w4:240,naps:2,desc:'11 meses: casi lista para 1 siesta',wwRange:'3-4h'},
+    12: {w1:195,n1:90,w2:225,n2:45,w3:240,n3:30,w4:240,naps:2,desc:'12 meses: transición a 1 siesta',wwRange:'3-4h'},
+    13: {w1:210,n1:105,w2:240,n2:30,w3:255,n3:0,w4:255,naps:1,desc:'13 meses: 1 siesta consolidada',wwRange:'3-4h'},
+    14: {w1:225,n1:105,w2:255,n2:30,w3:270,n3:0,w4:270,naps:1,desc:'14 meses: wake windows de 4h+',wwRange:'3.5-4.5h'},
+    15: {w1:240,n1:120,w2:270,n2:30,w3:285,n3:0,w4:285,naps:1,desc:'15 meses: 1 siesta larga',wwRange:'3.5-5h'},
+    16: {w1:255,n1:120,w2:285,n2:30,w3:300,n3:0,w4:300,naps:1,desc:'16 meses: wake windows creciendo',wwRange:'4-5h'},
+    17: {w1:270,n1:120,w2:300,n2:0,w3:315,n3:0,w4:315,naps:1,desc:'17 meses: casi sin siestas',wwRange:'4.5-5.5h'},
+    18: {w1:285,n1:105,w2:315,n2:0,w3:330,n3:0,w4:330,naps:1,desc:'18 meses: siesta opcional',wwRange:'4.5-6h'},
+    19: {w1:300,n1:90,w2:330,n2:0,w3:345,n3:0,w4:345,naps:0,desc:'19 meses: algunos días sin siesta',wwRange:'5-6h'},
+    20: {w1:315,n1:75,w2:345,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'20 meses: mayoría sin siestas',wwRange:'5-6h'},
+    21: {w1:330,n1:60,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'21 meses: wake windows de 5.5h+',wwRange:'5.5-6h'},
+    22: {w1:330,n1:45,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'22 meses: casi sin siestas',wwRange:'5.5-6h'},
+    23: {w1:345,n1:30,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'23 meses: día completo despierto',wwRange:'6h+'},
+    24: {w1:360,n1:30,w2:360,n2:0,w3:360,n3:0,w4:360,naps:0,desc:'2 años: sin siestas',wwRange:'6h+'},
+  }
+};
+
+function getScheduleForSource(source, ageMonths) {
+  const data = SCHEDULE_DATA[source];
+  if (!data) return null;
+  // Clamp age to 0-24 for lookup
+  const clampedAge = Math.max(0, Math.min(24, Math.floor(ageMonths)));
+  return data[clampedAge] || data[24];
+}
+
 function getRecommendedSchedule(ageMonths) {
-  // Based on Taking Cara Babies + Precious Little Sleep guidelines
-  if (ageMonths < 4) {
-    return { 
-      w1: 60, n1: 45, w2: 60, n2: 45, w3: 60, n3: 45, w4: 60,
-      naps: 4, desc: '4-5 siestas cortas, wake windows de 1-1.5h'
-    };
-  } else if (ageMonths < 6) {
-    return { 
-      w1: 90, n1: 60, w2: 105, n2: 75, w3: 120, n3: 60, w4: 150,
-      naps: 3, desc: '3-4 siestas, wake windows de 1.5-2.5h'
-    };
-  } else if (ageMonths < 9) {
-    return { 
-      w1: 120, n1: 90, w2: 150, n2: 90, w3: 180, n3: 45, w4: 210,
-      naps: 2, desc: '2-3 siestas, wake windows de 2-3h'
-    };
-  } else if (ageMonths < 12) {
-    return { 
-      w1: 180, n1: 90, w2: 210, n2: 60, w3: 240, n3: 30, w4: 270,
-      naps: 2, desc: '2 siestas, wake windows de 3-4h'
-    };
-  } else if (ageMonths < 18) {
-    return { 
-      w1: 240, n1: 120, w2: 300, n2: 30, w3: 360, n3: 0, w4: 360,
-      naps: 1, desc: '1-2 siestas, wake windows de 4-6h'
-    };
-  } else if (ageMonths < 24) {
-    return { 
-      w1: 300, n1: 120, w2: 360, n2: 0, w3: 360, n3: 0, w4: 360,
-      naps: 1, desc: '1 siesta, wake windows de 5-6h'
-    };
-  } else {
-    return { 
-      w1: 360, n1: 90, w2: 360, n2: 0, w3: 360, n3: 0, w4: 360,
-      naps: 0, desc: '0-1 siesta, wake windows de 6h+'
+  const source = document.getElementById('sourceSelect').value;
+
+  if (source === 'promedio') {
+    // Calculate average between Taking Cara Babies and Huckleberry
+    const tcb = getScheduleForSource('takingcarababies', ageMonths);
+    const huck = getScheduleForSource('huckleberry', ageMonths);
+    if (!tcb || !huck) return tcb || huck;
+
+    return {
+      w1: Math.round((tcb.w1 + huck.w1) / 2),
+      n1: Math.round((tcb.n1 + huck.n1) / 2),
+      w2: Math.round((tcb.w2 + huck.w2) / 2),
+      n2: Math.round((tcb.n2 + huck.n2) / 2),
+      w3: Math.round((tcb.w3 + huck.w3) / 2),
+      n3: Math.round((tcb.n3 + huck.n3) / 2),
+      w4: Math.round((tcb.w4 + huck.w4) / 2),
+      naps: Math.round((tcb.naps + huck.naps) / 2),
+      desc: `Promedio entre Taking Cara Babies y Huckleberry`,
+      wwRange: tcb.wwRange,
+      tcbData: tcb,
+      huckData: huck
     };
   }
+
+  return getScheduleForSource(source, ageMonths);
 }
 
 function applyAgeBasedSchedule() {
   const age = parseInt(document.getElementById('babyAge').value) || 6;
+  const source = document.getElementById('sourceSelect').value;
   const rec = getRecommendedSchedule(age);
+
+  if (!rec) {
+    showToast('❌ No se encontraron datos para esa edad', 'alert');
+    return;
+  }
 
   document.getElementById('w1').value = rec.w1;
   document.getElementById('n1').value = rec.n1;
@@ -1067,10 +1285,46 @@ function applyAgeBasedSchedule() {
   document.getElementById('n3').value = rec.n3;
   document.getElementById('w4').value = rec.w4;
 
-  document.getElementById('ageRecommendation').textContent = 
-    `💡 ${rec.naps} siesta(s) recomendada(s). ${rec.desc}`;
+  // Show details panel
+  const detailsDiv = document.getElementById('ageDetails');
+  const contentDiv = document.getElementById('ageDetailContent');
 
-  showToast(`🎯 Tiempos aplicados para ${age} meses`);
+  let detailsHTML = `<strong>📅 ${age} meses</strong><br>`;
+  detailsHTML += `<strong>🍼 Siestas:</strong> ${rec.naps} por día<br>`;
+  detailsHTML += `<strong>⏰ Wake windows:</strong> ${rec.wwRange}<br>`;
+  detailsHTML += `<strong>📝 Nota:</strong> ${rec.desc}<br><br>`;
+
+  if (source === 'promedio' && rec.tcbData && rec.huckData) {
+    detailsHTML += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">`;
+    detailsHTML += `<div style="background:#0d0d0d;padding:10px;border-radius:8px;"><strong style="color:var(--primary);font-size:11px;">Taking Cara Babies</strong><br>`;
+    detailsHTML += `W1: ${rec.tcbData.w1}m | N1: ${rec.tcbData.n1}m<br>`;
+    detailsHTML += `W2: ${rec.tcbData.w2}m | N2: ${rec.tcbData.n2}m<br>`;
+    detailsHTML += `W3: ${rec.tcbData.w3}m | N3: ${rec.tcbData.n3}m<br>`;
+    detailsHTML += `W4: ${rec.tcbData.w4}m | Siestas: ${rec.tcbData.naps}</div>`;
+    detailsHTML += `<div style="background:#0d0d0d;padding:10px;border-radius:8px;"><strong style="color:var(--accent);font-size:11px;">Huckleberry</strong><br>`;
+    detailsHTML += `W1: ${rec.huckData.w1}m | N1: ${rec.huckData.n1}m<br>`;
+    detailsHTML += `W2: ${rec.huckData.w2}m | N2: ${rec.huckData.n2}m<br>`;
+    detailsHTML += `W3: ${rec.huckData.w3}m | N3: ${rec.huckData.n3}m<br>`;
+    detailsHTML += `W4: ${rec.huckData.w4}m | Siestas: ${rec.huckData.naps}</div>`;
+    detailsHTML += `</div>`;
+  }
+
+  contentDiv.innerHTML = detailsHTML;
+  detailsDiv.style.display = 'block';
+
+  // Auto-save settings immediately so generateSchedule uses the new values
+  settings.w1 = rec.w1; settings.n1 = rec.n1;
+  settings.w2 = rec.w2; settings.n2 = rec.n2;
+  settings.w3 = rec.w3; settings.n3 = rec.n3;
+  settings.w4 = rec.w4;
+  settings.babyAge = age;
+  settings.source = source;
+  saveToLocalStorage();
+  saveToFirestore();
+
+  const sourceName = source === 'promedio' ? 'Promedio' : 
+                     source === 'takingcarababies' ? 'Taking Cara Babies' : 'Huckleberry';
+  showToast(`🎯 ${sourceName}: tiempos aplicados para ${age} meses`);
 }
 
 function applySettings() {
@@ -1082,6 +1336,8 @@ function applySettings() {
   settings.n3 = parseInt(document.getElementById('n3').value) || DEFAULTS.n3;
   settings.w4 = parseInt(document.getElementById('w4').value) || DEFAULTS.w4;
   settings.babyAge = parseInt(document.getElementById('babyAge').value) || 6;
+  settings.source = document.getElementById('sourceSelect').value;
+  settings.bedTime = document.getElementById('bedTime').value;
   saveToLocalStorage();
   saveToFirestore();
   showToast('✅ Ajustes guardados');
@@ -1093,7 +1349,10 @@ function resetDefaults() {
   document.getElementById('w3').value = DEFAULTS.w3; document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
   document.getElementById('babyAge').value = 6;
-  document.getElementById('ageRecommendation').textContent = '';
+  document.getElementById('sourceSelect').value = 'promedio';
+  document.getElementById('ageDetails').style.display = 'none';
+  document.getElementById('bedTime').value = '19:30';
+  document.getElementById('scheduleCheckResult').style.display = 'none';
   saveToLocalStorage();
   saveToFirestore();
   showToast('Restablecido');
@@ -1132,6 +1391,10 @@ async function clearAllData() {
   document.getElementById('w3').value = DEFAULTS.w3; 
   document.getElementById('n3').value = DEFAULTS.n3;
   document.getElementById('w4').value = DEFAULTS.w4;
+  document.getElementById('babyAge').value = 6;
+  document.getElementById('sourceSelect').value = 'promedio';
+  document.getElementById('bedTime').value = '19:30';
+  document.getElementById('scheduleCheckResult').style.display = 'none';
   document.getElementById('timelineCard').style.display = 'none';
   document.getElementById('statsCard').style.display = 'none';
   document.getElementById('countdownBanner').style.display = 'none';
@@ -1169,7 +1432,21 @@ function init() {
     isEditingWakeTime = false; 
     updateWakeDisplay();
   });
-  wakeInput.addEventListener('change', updateWakeDisplay);
+  wakeInput.addEventListener('change', () => {
+    updateWakeDisplay();
+    checkScheduleFit();
+  });
+
+  // Bedtime input listener (now in Settings tab)
+  const bedInput = document.getElementById('bedTime');
+  if (bedInput) {
+    bedInput.addEventListener('focus', () => { isEditingWakeTime = true; });
+    bedInput.addEventListener('blur', () => { 
+      isEditingWakeTime = false; 
+      checkScheduleFit();
+    });
+    bedInput.addEventListener('change', checkScheduleFit);
+  }
 
   // Update countdown every 10 seconds - but don't render if editing wake time
   alertTimer = setInterval(() => {
