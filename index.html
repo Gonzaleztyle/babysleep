@@ -380,7 +380,7 @@ function checkScheduleFit() {
   if (bedMins >= wakeMins) {
     totalDayMins = bedMins - wakeMins;
   } else {
-    totalDayMins = (bedMins + 1440) - wakeMins; // crosses midnight
+    totalDayMins = (bedMins + 1440) - wakeMins;
   }
 
   // Get CURRENT values from inputs
@@ -393,114 +393,96 @@ function checkScheduleFit() {
   const w4 = parseInt(document.getElementById('w4').value) || 0;
 
   // Calculate totals
-  const totalWake = w1 + w2 + w3 + w4;  // Total awake time
-  const totalNaps = n1 + n2 + n3;        // Total nap time (sleep)
+  const totalWake = w1 + w2 + w3 + w4;
+  const totalNaps = n1 + n2 + n3;
   const totalNeeded = totalWake + totalNaps;
   const diff = totalDayMins - totalNeeded;
 
-  // Calculate how much wake time and sleep time we have vs need
-  // For a balanced day, wake time should be roughly 60-70% of day, naps 30-40%
-  const idealWakeRatio = 0.65; // 65% awake, 35% napping is typical
-  const idealWakeMins = Math.round(totalDayMins * idealWakeRatio);
+  // Calculate ideal distribution for the available time
+  const idealWakeMins = Math.round(totalDayMins * 0.65);
   const idealNapMins = totalDayMins - idealWakeMins;
 
-  const wakeDiff = idealWakeMins - totalWake;  // Positive = need more awake time
-  const napDiff = idealNapMins - totalNaps;      // Positive = need more nap time
+  const wakeDiff = idealWakeMins - totalWake;
+  const napDiff = idealNapMins - totalNaps;
 
   const resultDiv = document.getElementById('scheduleCheckResult');
   const contentDiv = document.getElementById('scheduleCheckContent');
 
   let html = '';
+  let statusColor = '';
+  let statusIcon = '';
+  let statusText = '';
 
-  // Header with total status
+  // Determine status based on TOTAL diff (not individual components)
   if (Math.abs(diff) <= 15) {
-    html += `<div style="color:var(--primary);font-weight:700;margin-bottom:10px;font-size:15px;">✅ ¡Perfecto! La rutina cuadra con tu meta.</div>`;
+    statusColor = 'var(--primary)';
+    statusIcon = '✅';
+    statusText = '¡Perfecto! La rutina cuadra con tu meta.';
     resultDiv.style.borderColor = 'var(--primary)';
-  } else if (diff > 0) {
-    html += `<div style="color:var(--warning);font-weight:700;margin-bottom:10px;font-size:15px;">⚠️ Sobran ${formatDuration(diff)} en el día</div>`;
+  } else if (diff > 15) {
+    statusColor = 'var(--warning)';
+    statusIcon = '⚠️';
+    statusText = `Sobran ${formatDuration(diff)} en el día`;
     resultDiv.style.borderColor = 'var(--warning)';
   } else {
-    html += `<div style="color:var(--danger);font-weight:700;margin-bottom:10px;font-size:15px;">❌ Faltan ${formatDuration(Math.abs(diff))} en el día</div>`;
+    statusColor = 'var(--danger)';
+    statusIcon = '❌';
+    statusText = `Faltan ${formatDuration(Math.abs(diff))} en el día`;
     resultDiv.style.borderColor = 'var(--danger)';
   }
 
-  // Summary table
-  html += `<div style="background:#1a1a1a;padding:12px;border-radius:10px;margin-bottom:10px;">`;
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;font-size:12px;">`;
-  html += `<div><div style="color:var(--text-muted);margin-bottom:4px;">⏱️ Total día</div><div style="font-weight:700;color:var(--text);">${formatDuration(totalDayMins)}</div></div>`;
-  html += `<div><div style="color:var(--text-muted);margin-bottom:4px;">📋 Tu rutina</div><div style="font-weight:700;color:var(--text);">${formatDuration(totalNeeded)}</div></div>`;
-  html += `<div><div style="color:var(--text-muted);margin-bottom:4px;">📊 Diferencia</div><div style="font-weight:700;color:${diff >= 0 ? 'var(--primary)' : 'var(--danger)'};">${diff >= 0 ? '+' : ''}${formatDuration(diff)}</div></div>`;
-  html += `</div></div>`;
+  // Compact header
+  html += `<div style="color:${statusColor};font-weight:700;margin-bottom:8px;font-size:14px;">${statusIcon} ${statusText}</div>`;
 
-  // Breakdown: Awake vs Sleep
-  html += `<div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;">📈 Desglose del día</div>`;
+  // Compact summary row
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;font-size:11px;margin-bottom:8px;">`;
+  html += `<div style="background:#1a1a1a;padding:6px 4px;border-radius:8px;"><div style="color:var(--text-muted);margin-bottom:2px;">⏱️ Día</div><div style="font-weight:700;color:var(--text);">${formatDuration(totalDayMins)}</div></div>`;
+  html += `<div style="background:#1a1a1a;padding:6px 4px;border-radius:8px;"><div style="color:var(--text-muted);margin-bottom:2px;">📋 Rutina</div><div style="font-weight:700;color:var(--text);">${formatDuration(totalNeeded)}</div></div>`;
+  html += `<div style="background:#1a1a1a;padding:6px 4px;border-radius:8px;"><div style="color:var(--text-muted);margin-bottom:2px;">📊 Diff</div><div style="font-weight:700;color:${diff >= 0 ? 'var(--primary)' : 'var(--danger)'};">${diff >= 0 ? '+' : ''}${formatDuration(diff)}</div></div>`;
+  html += `</div>`;
 
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">`;
+  // Compact breakdown cards
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">`;
 
-  // Awake time card
-  const awakeColor = wakeDiff > 15 ? 'var(--warning)' : wakeDiff < -15 ? 'var(--danger)' : 'var(--primary)';
-  const awakeIcon = wakeDiff > 15 ? '⚠️' : wakeDiff < -15 ? '❌' : '✅';
-  html += `<div style="background:#0d0d0d;padding:12px;border-radius:10px;border:1px solid #333;">`;
-  html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">☀️ Tiempo despierto</div>`;
-  html += `<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">${formatDuration(totalWake)}</div>`;
-  html += `<div style="font-size:11px;color:${awakeColor};">${awakeIcon} `;
-  if (wakeDiff > 15) {
-    html += `Faltan ${formatDuration(wakeDiff)} para llegar a meta`;
-  } else if (wakeDiff < -15) {
-    html += `Sobran ${formatDuration(Math.abs(wakeDiff))} de wake time`;
-  } else {
-    html += `Wake time equilibrado`;
-  }
-  html += `</div></div>`;
+  // Awake card
+  const awakeStatus = wakeDiff > 15 ? ['var(--warning)', '⚠️', `Faltan ${formatDuration(wakeDiff)}`] : 
+                      wakeDiff < -15 ? ['var(--danger)', '❌', `Sobran ${formatDuration(Math.abs(wakeDiff))}`] : 
+                      ['var(--primary)', '✅', 'Equilibrado'];
+  html += `<div style="background:#0d0d0d;padding:8px;border-radius:8px;border:1px solid #222;">`;
+  html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">☀️ Despierto</div>`;
+  html += `<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px;">${formatDuration(totalWake)}</div>`;
+  html += `<div style="font-size:10px;color:${awakeStatus[0]};">${awakeStatus[1]} ${awakeStatus[2]}</div>`;
+  html += `</div>`;
 
-  // Sleep time card
-  const sleepColor = napDiff > 15 ? 'var(--warning)' : napDiff < -15 ? 'var(--danger)' : 'var(--primary)';
-  const sleepIcon = napDiff > 15 ? '⚠️' : napDiff < -15 ? '❌' : '✅';
-  html += `<div style="background:#0d0d0d;padding:12px;border-radius:10px;border:1px solid #333;">`;
-  html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">😴 Tiempo de siestas</div>`;
-  html += `<div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">${formatDuration(totalNaps)}</div>`;
-  html += `<div style="font-size:11px;color:${sleepColor};">${sleepIcon} `;
-  if (napDiff > 15) {
-    html += `Faltan ${formatDuration(napDiff)} de siestas`;
-  } else if (napDiff < -15) {
-    html += `Sobran ${formatDuration(Math.abs(napDiff))} de siestas`;
-  } else {
-    html += `Siestas equilibradas`;
-  }
-  html += `</div></div>`;
+  // Sleep card
+  const sleepStatus = napDiff > 15 ? ['var(--warning)', '⚠️', `Faltan ${formatDuration(napDiff)}`] : 
+                      napDiff < -15 ? ['var(--danger)', '❌', `Sobran ${formatDuration(Math.abs(napDiff))}`] : 
+                      ['var(--primary)', '✅', 'Equilibrado'];
+  html += `<div style="background:#0d0d0d;padding:8px;border-radius:8px;border:1px solid #222;">`;
+  html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">😴 Siestas</div>`;
+  html += `<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px;">${formatDuration(totalNaps)}</div>`;
+  html += `<div style="font-size:10px;color:${sleepStatus[0]};">${sleepStatus[1]} ${sleepStatus[2]}</div>`;
+  html += `</div>`;
 
   html += `</div>`;
 
-  // Recommendations
+  // Compact recommendations (only if needed)
   if (Math.abs(diff) > 15) {
-    html += `<div style="background:#1a1a1a;padding:12px;border-radius:10px;margin-top:10px;">`;
-    html += `<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;">💡 Recomendaciones</div>`;
+    html += `<div style="background:#1a1a1a;padding:8px;border-radius:8px;">`;
+    html += `<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;">💡 Ajustar</div>`;
+    html += `<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">`;
 
-    if (diff > 0) {
-      // Too much time - need to fill
-      html += `<div style="font-size:12px;color:var(--text-muted);line-height:1.6;">`;
-      if (wakeDiff > 15) {
-        html += `• <strong>Aumenta wake windows:</strong> Suma ${formatDuration(Math.ceil(wakeDiff/4))} a cada ventana despierto<br>`;
-      }
-      if (napDiff > 15) {
-        html += `• <strong>Aumenta siestas:</strong> Suma ${formatDuration(Math.ceil(napDiff/3))} a cada siesta<br>`;
-      }
-      html += `• <strong>O acuesta más tarde:</strong> La meta actual deja tiempo libre`;
-      html += `</div>`;
+    if (diff > 15) {
+      if (wakeDiff > 15) html += `• +${formatDuration(Math.ceil(wakeDiff/4))} a cada wake window<br>`;
+      if (napDiff > 15) html += `• +${formatDuration(Math.ceil(napDiff/3))} a cada siesta<br>`;
+      html += `• O acostar más tarde`;
     } else {
-      // Not enough time - need to reduce
-      html += `<div style="font-size:12px;color:var(--text-muted);line-height:1.6;">`;
-      if (wakeDiff < -15) {
-        html += `• <strong>Reduce wake windows:</strong> Resta ${formatDuration(Math.ceil(Math.abs(wakeDiff)/4))} a cada ventana despierto<br>`;
-      }
-      if (napDiff < -15) {
-        html += `• <strong>Reduce siestas:</strong> Resta ${formatDuration(Math.ceil(Math.abs(napDiff)/3))} a cada siesta<br>`;
-      }
-      html += `• <strong>O acuesta más temprano:</strong> La meta actual es muy tarde`;
-      html += `</div>`;
+      if (wakeDiff < -15) html += `• -${formatDuration(Math.ceil(Math.abs(wakeDiff)/4))} a cada wake window<br>`;
+      if (napDiff < -15) html += `• -${formatDuration(Math.ceil(Math.abs(napDiff)/3))} a cada siesta<br>`;
+      html += `• O acostar más temprano`;
     }
 
-    html += `</div>`;
+    html += `</div></div>`;
   }
 
   contentDiv.innerHTML = html;
