@@ -216,11 +216,6 @@
           <button class="btn btn-primary" onclick="setNow()">Ahora</button>
         </div>
 
-        <!-- Schedule Check Result -->
-        <div id="scheduleCheckResult" style="display:none;margin-top:16px;padding:14px;background:#1a1a1a;border-radius:12px;border:1px solid #333;">
-          <div id="scheduleCheckContent" style="font-size:13px;line-height:1.6;"></div>
-        </div>
-
         <div style="margin-top:16px;">
           <button class="btn btn-accent" onclick="generateSchedule()" style="width:100%;padding:16px;font-size:16px;">📅 Generar rutina del día</button>
         </div>
@@ -245,8 +240,33 @@
 
   <div class="page" id="page-settings">
     <div class="card">
+      <div class="section-title green">🍼 Sobre tu bebé</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Configura la edad y la fuente de estudios para obtener recomendaciones personalizadas.</p>
+
+      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="6" min="0" max="48"><span>meses</span></div></div>
+
+      <div class="setting-row"><span class="setting-label">Fuente de estudios</span><div class="setting-input" style="flex:1;flex-direction:column;align-items:flex-start;gap:4px;">
+        <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);">
+          <option value="takingcarababies">Taking Cara Babies — Cara Dumaplin, enfermera neonatal</option>
+          <option value="huckleberry">Huckleberry — App basada en datos de miles de bebés</option>
+          <option value="promedio">Promedio — Media entre ambas fuentes</option>
+        </select>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Tiempos recomendados extraídos de guías de especialistas en sueño infantil</span>
+      </div></div>
+
+      <div class="controls" style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="applyAgeBasedSchedule()" style="width:100%;">🎯 Aplicar tiempos recomendados</button>
+      </div>
+
+      <div id="ageDetails" style="margin-top:14px;padding:14px;background:#1a1a1a;border-radius:12px;border:1px solid #333;display:none;">
+        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">📋 Detalles de la rutina</div>
+        <div id="ageDetailContent" style="font-size:13px;color:var(--text-muted);line-height:1.6;"></div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="section-title">⚙️ Tiempos por defecto</div>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina inicial. Luego puedes ajustar las horas manualmente.</p>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos manualmente después de aplicar los recomendados.</p>
       <div class="setting-row"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1" value="105" min="30" max="300"><span>min</span></div></div>
       <div class="setting-row"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1" value="75" min="15" max="180"><span>min</span></div></div>
       <div class="setting-row"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2" value="120" min="30" max="300"><span>min</span></div></div>
@@ -254,32 +274,18 @@
       <div class="setting-row"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3" value="135" min="30" max="300"><span>min</span></div></div>
       <div class="setting-row"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3" value="45" min="15" max="180"><span>min</span></div></div>
       <div class="setting-row"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="180" min="60" max="360"><span>min</span></div></div>
+    </div>
 
-      <div style="border-top:2px solid var(--border);margin:20px 0;padding-top:20px;">
-        <div class="section-title green">🎯 Preferencias de rutina</div>
-        <p style="font-size:13px;color:var(--text-light);margin-bottom:8px;">Configura la meta de horario y la fuente de recomendaciones.</p>
-        <p style="font-size:12px;color:var(--alert);margin-bottom:16px;font-weight:600;">⚠️ Se recomienda hacer estos cambios al comienzo del día.</p>
+    <div class="card">
+      <div class="section-title green">🌙 Meta de horario</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Fija una hora objetivo para acostar al bebé. Te avisaremos si tu rutina actual no cuadra.</p>
+      <p style="font-size:12px;color:var(--alert);margin-bottom:16px;font-weight:600;">⚠️ Se recomienda hacer estos cambios al comienzo del día.</p>
 
-        <div class="setting-row"><span class="setting-label">🌙 Meta: hora de acostar</span><div class="setting-input"><input type="time" id="bedTime" value="19:30" onchange="updateBedDisplay();checkScheduleFit();"><span></span></div></div>
+      <div class="setting-row"><span class="setting-label">¿Quieres fijar hora de acostar?</span><div class="setting-input"><input type="time" id="bedTime" value="19:30" style="color:var(--text);background:var(--card);" onchange="checkScheduleFit();"><span></span></div></div>
 
-        <div class="setting-row"><span class="setting-label">Fuente</span><div class="setting-input" style="flex:1;">
-          <select id="sourceSelect" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);">
-            <option value="takingcarababies">Taking Cara Babies</option>
-            <option value="huckleberry">Huckleberry</option>
-            <option value="promedio" selected>Promedio</option>
-          </select>
-        </div></div>
-
-        <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="6" min="0" max="48"><span>meses</span></div></div>
-
-        <div class="controls" style="margin-top:12px;">
-          <button class="btn btn-primary" onclick="applyAgeBasedSchedule()" style="width:100%;">🎯 Aplicar tiempos recomendados</button>
-        </div>
-
-        <div id="ageDetails" style="margin-top:14px;padding:14px;background:#1a1a1a;border-radius:12px;border:1px solid #333;display:none;">
-          <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">📋 Detalles de la rutina</div>
-          <div id="ageDetailContent" style="font-size:13px;color:var(--text-muted);line-height:1.6;"></div>
-        </div>
+      <!-- Schedule Check Result -->
+      <div id="scheduleCheckResult" style="display:none;margin-top:10px;padding:12px;background:#ffffff;border-radius:10px;border:2px solid #e0e0e0;">
+        <div id="scheduleCheckContent" style="font-size:12px;line-height:1.5;color:#1a1a1a;"></div>
       </div>
 
       <div class="controls" style="margin-top:16px;display:flex;gap:8px;">
@@ -370,7 +376,10 @@ function checkScheduleFit() {
   const wakeStr = document.getElementById('wakeTime').value;
   const bedStr = document.getElementById('bedTime').value;
 
-  if (!wakeStr || !bedStr) return;
+  if (!wakeStr || !bedStr) {
+    document.getElementById('scheduleCheckResult').style.display = 'none';
+    return;
+  }
 
   const wakeMins = timeToMinutes(wakeStr);
   const bedMins = timeToMinutes(bedStr);
@@ -392,99 +401,32 @@ function checkScheduleFit() {
   const n3 = parseInt(document.getElementById('n3').value) || 0;
   const w4 = parseInt(document.getElementById('w4').value) || 0;
 
-  // Calculate totals
-  const totalWake = w1 + w2 + w3 + w4;
-  const totalNaps = n1 + n2 + n3;
-  const totalNeeded = totalWake + totalNaps;
+  const totalNeeded = w1 + n1 + w2 + n2 + w3 + n3 + w4;
   const diff = totalDayMins - totalNeeded;
-
-  // Calculate ideal distribution for the available time
-  const idealWakeMins = Math.round(totalDayMins * 0.65);
-  const idealNapMins = totalDayMins - idealWakeMins;
-
-  const wakeDiff = idealWakeMins - totalWake;
-  const napDiff = idealNapMins - totalNaps;
 
   const resultDiv = document.getElementById('scheduleCheckResult');
   const contentDiv = document.getElementById('scheduleCheckContent');
 
   let html = '';
-  let statusColor = '';
-  let statusIcon = '';
-  let statusText = '';
 
-  // Determine status based on TOTAL diff (not individual components)
   if (Math.abs(diff) <= 15) {
-    statusColor = 'var(--primary)';
-    statusIcon = '✅';
-    statusText = '¡Perfecto! La rutina cuadra con tu meta.';
-    resultDiv.style.borderColor = 'var(--primary)';
-  } else if (diff > 15) {
-    statusColor = 'var(--warning)';
-    statusIcon = '⚠️';
-    statusText = `Sobran ${formatDuration(diff)} en el día`;
-    resultDiv.style.borderColor = 'var(--warning)';
-  } else {
-    statusColor = 'var(--danger)';
-    statusIcon = '❌';
-    statusText = `Faltan ${formatDuration(Math.abs(diff))} en el día`;
-    resultDiv.style.borderColor = 'var(--danger)';
+    // Perfect fit - hide the warning
+    resultDiv.style.display = 'none';
+    return;
   }
 
-  // Compact header
-  html += `<div style="color:${statusColor};font-weight:700;margin-bottom:8px;font-size:14px;">${statusIcon} ${statusText}</div>`;
+  // Show compact warning on WHITE background with BLACK text
+  const diffText = diff > 0 ? `sobran ${formatDuration(diff)}` : `faltan ${formatDuration(Math.abs(diff))}`;
+  const accentColor = diff > 0 ? '#ff9100' : '#ff1744'; // warning or danger
+  const icon = diff > 0 ? '⚠️' : '❌';
 
-  // Compact summary row
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center;font-size:11px;margin-bottom:8px;">`;
-  html += `<div style="background:#1a1a1a;padding:6px 4px;border-radius:8px;"><div style="color:var(--text-muted);margin-bottom:2px;">⏱️ Día</div><div style="font-weight:700;color:var(--text);">${formatDuration(totalDayMins)}</div></div>`;
-  html += `<div style="background:#1a1a1a;padding:6px 4px;border-radius:8px;"><div style="color:var(--text-muted);margin-bottom:2px;">📋 Rutina</div><div style="font-weight:700;color:var(--text);">${formatDuration(totalNeeded)}</div></div>`;
-  html += `<div style="background:#1a1a1a;padding:6px 4px;border-radius:8px;"><div style="color:var(--text-muted);margin-bottom:2px;">📊 Diff</div><div style="font-weight:700;color:${diff >= 0 ? 'var(--primary)' : 'var(--danger)'};">${diff >= 0 ? '+' : ''}${formatDuration(diff)}</div></div>`;
+  html += `<div style="color:${accentColor};font-weight:800;margin-bottom:6px;font-size:14px;text-align:center;">${icon} Hay una diferencia de ${diffText}</div>`;
+  html += `<div style="color:#333;font-size:12px;line-height:1.5;text-align:center;margin-bottom:8px;">`;
+  html += `Entre la hora que despertó (${wakeStr}) y la fijada para acostar (${bedStr}) hay ${formatDuration(totalDayMins)}, pero tu rutina actual ocupa ${formatDuration(totalNeeded)}.`;
   html += `</div>`;
+  html += `<div style="color:#1a1a1a;font-size:13px;font-weight:700;text-align:center;padding-top:8px;border-top:1px solid #e0e0e0;">Ajusta tiempos de siesta o despierto</div>`;
 
-  // Compact breakdown cards
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">`;
-
-  // Awake card
-  const awakeStatus = wakeDiff > 15 ? ['var(--warning)', '⚠️', `Faltan ${formatDuration(wakeDiff)}`] : 
-                      wakeDiff < -15 ? ['var(--danger)', '❌', `Sobran ${formatDuration(Math.abs(wakeDiff))}`] : 
-                      ['var(--primary)', '✅', 'Equilibrado'];
-  html += `<div style="background:#0d0d0d;padding:8px;border-radius:8px;border:1px solid #222;">`;
-  html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">☀️ Despierto</div>`;
-  html += `<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px;">${formatDuration(totalWake)}</div>`;
-  html += `<div style="font-size:10px;color:${awakeStatus[0]};">${awakeStatus[1]} ${awakeStatus[2]}</div>`;
-  html += `</div>`;
-
-  // Sleep card
-  const sleepStatus = napDiff > 15 ? ['var(--warning)', '⚠️', `Faltan ${formatDuration(napDiff)}`] : 
-                      napDiff < -15 ? ['var(--danger)', '❌', `Sobran ${formatDuration(Math.abs(napDiff))}`] : 
-                      ['var(--primary)', '✅', 'Equilibrado'];
-  html += `<div style="background:#0d0d0d;padding:8px;border-radius:8px;border:1px solid #222;">`;
-  html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">😴 Siestas</div>`;
-  html += `<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px;">${formatDuration(totalNaps)}</div>`;
-  html += `<div style="font-size:10px;color:${sleepStatus[0]};">${sleepStatus[1]} ${sleepStatus[2]}</div>`;
-  html += `</div>`;
-
-  html += `</div>`;
-
-  // Compact recommendations (only if needed)
-  if (Math.abs(diff) > 15) {
-    html += `<div style="background:#1a1a1a;padding:8px;border-radius:8px;">`;
-    html += `<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;">💡 Ajustar</div>`;
-    html += `<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">`;
-
-    if (diff > 15) {
-      if (wakeDiff > 15) html += `• +${formatDuration(Math.ceil(wakeDiff/4))} a cada wake window<br>`;
-      if (napDiff > 15) html += `• +${formatDuration(Math.ceil(napDiff/3))} a cada siesta<br>`;
-      html += `• O acostar más tarde`;
-    } else {
-      if (wakeDiff < -15) html += `• -${formatDuration(Math.ceil(Math.abs(wakeDiff)/4))} a cada wake window<br>`;
-      if (napDiff < -15) html += `• -${formatDuration(Math.ceil(Math.abs(napDiff)/3))} a cada siesta<br>`;
-      html += `• O acostar más temprano`;
-    }
-
-    html += `</div></div>`;
-  }
-
+  resultDiv.style.borderColor = accentColor;
   contentDiv.innerHTML = html;
   resultDiv.style.display = 'block';
 }
@@ -495,10 +437,7 @@ function setSuggestedBedtime(time) {
   showToast(`🌙 Meta de acostar ajustada a ${time}`);
 }
 
-function updateBedDisplay() {
-  // Bedtime display was removed from main screen, now just a helper
-  // The bedtime input is in Settings
-}
+// updateBedDisplay removed - bedtime is now only in Settings
 
 // ═══════════════════════════════════════════════════════════════
 // AUTHENTICATION
