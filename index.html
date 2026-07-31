@@ -215,7 +215,6 @@
           <input type="time" id="wakeTime" value="07:00">
           <button class="btn btn-primary" onclick="setNow()">Ahora</button>
         </div>
-
         <div style="margin-top:16px;">
           <button class="btn btn-accent" onclick="generateSchedule()" style="width:100%;padding:16px;font-size:16px;">📅 Generar rutina del día</button>
         </div>
@@ -277,11 +276,10 @@
     </div>
 
     <div class="card">
-      <div class="section-title green">🌙 Meta de horario</div>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Fija una hora objetivo para acostar al bebé. Te avisaremos si tu rutina actual no cuadra.</p>
-      <p style="font-size:12px;color:var(--alert);margin-bottom:16px;font-weight:600;">⚠️ Se recomienda hacer estos cambios al comienzo del día.</p>
+      <div class="setting-row" style="border-bottom:none;padding-bottom:0;"><span class="setting-label" style="font-size:15px;">🌙 ¿Quieres fijar hora de acostar?</span><div class="setting-input"><input type="time" id="bedTime" value="19:30" style="color:var(--text);background:var(--card);font-size:16px;padding:12px 16px;width:120px;" onchange="checkScheduleFit();"><span></span></div></div>
 
-      <div class="setting-row"><span class="setting-label">¿Quieres fijar hora de acostar?</span><div class="setting-input"><input type="time" id="bedTime" value="19:30" style="color:var(--text);background:var(--card);" onchange="checkScheduleFit();"><span></span></div></div>
+      <p style="font-size:13px;color:var(--text-light);margin-top:12px;margin-bottom:8px;">Fija una hora objetivo para acostar al bebé. Te avisaremos si tu rutina actual no cuadra.</p>
+      <p style="font-size:12px;color:var(--alert);margin-bottom:16px;font-weight:600;">⚠️ Se recomienda hacer estos cambios al comienzo del día.</p>
 
       <!-- Schedule Check Result -->
       <div id="scheduleCheckResult" style="display:none;margin-top:10px;padding:12px;background:#ffffff;border-radius:10px;border:2px solid #e0e0e0;">
@@ -294,15 +292,7 @@
       </div>
     </div>
 
-    <div class="card card-dark">
-      <div class="section-title alert">🔔 Alertas</div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">En iOS las notificaciones push no funcionan en web apps. Activa estas alternativas:</p>
-      <div class="controls" style="display:flex;gap:8px;">
-        <button class="btn btn-warning" onclick="toggleVibration()" id="vibBtn" style="flex:1;">📳 Vibración: OFF</button>
-        <button class="btn btn-warning" onclick="toggleSound()" id="soundBtn" style="flex:1;">🔊 Sonido: OFF</button>
-      </div>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">ℹ️ Mantén la app abierta o en segundo plano reciente para que funcionen.</p>
-    </div>
+
 
     <div class="card card-dark">
       <div class="section-title">🗑️ Datos</div>
@@ -366,6 +356,7 @@ let lastAlertedBlock = -1;
 let currentUser = null;
 let isOnline = navigator.onLine;
 let pendingSync = false;
+let userEditedTimes = false;
 let isEditingWakeTime = false;
 
 // ═══════════════════════════════════════════════════════════════
@@ -438,6 +429,28 @@ function setSuggestedBedtime(time) {
 }
 
 // updateBedDisplay removed - bedtime is now only in Settings
+
+function updateSourceDisplay() {
+  const sourceSelect = document.getElementById('sourceSelect');
+  if (!sourceSelect) return;
+
+  // Check if any option is "user-defined"
+  let userOption = Array.from(sourceSelect.options).find(opt => opt.value === 'user');
+
+  if (userEditedTimes) {
+    if (!userOption) {
+      userOption = document.createElement('option');
+      userOption.value = 'user';
+      userOption.textContent = 'Definido por el usuario';
+      sourceSelect.appendChild(userOption);
+    }
+    sourceSelect.value = 'user';
+  } else {
+    if (userOption) {
+      userOption.remove();
+    }
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // AUTHENTICATION
@@ -1347,6 +1360,8 @@ function resetDefaults() {
   document.getElementById('ageDetails').style.display = 'none';
   document.getElementById('bedTime').value = '19:30';
   document.getElementById('scheduleCheckResult').style.display = 'none';
+  userEditedTimes = false;
+  updateSourceDisplay();
   saveToLocalStorage();
   saveToFirestore();
   showToast('Restablecido');
@@ -1389,6 +1404,8 @@ async function clearAllData() {
   document.getElementById('sourceSelect').value = 'promedio';
   document.getElementById('bedTime').value = '19:30';
   document.getElementById('scheduleCheckResult').style.display = 'none';
+  userEditedTimes = false;
+  updateSourceDisplay();
   document.getElementById('timelineCard').style.display = 'none';
   document.getElementById('statsCard').style.display = 'none';
   document.getElementById('countdownBanner').style.display = 'none';
@@ -1449,6 +1466,8 @@ function init() {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', () => {
+        userEditedTimes = true;
+        updateSourceDisplay();
         // Only check if we're on the "today" tab and have wake time set
         if (document.getElementById('wakeTime').value) {
           checkScheduleFit();
