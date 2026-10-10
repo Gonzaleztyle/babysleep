@@ -86,6 +86,7 @@
   .block.awake::before { background: var(--awake); }
   .block.past { opacity: 0.45; }
   .block.current { box-shadow: 0 0 0 3px var(--primary), 0 8px 32px rgba(0,200,83,0.2); transform: scale(1.02); }
+  .block.editing { box-shadow: 0 0 0 3px var(--accent), 0 8px 32px rgba(41,98,255,0.2); }
 
   .block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .block-type { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
@@ -97,9 +98,20 @@
   .status-done { background: #c8e6c9; color: #1b5e20; }
   .status-active { background: var(--primary); color: #000; }
   .status-upcoming { background: #f5f5f5; color: var(--text-light); }
+  .status-edited { background: var(--warning-bg); color: #e65100; }
 
   .block-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .block-actions .btn { flex: 1; min-width: 100px; }
+
+  .edit-mode { background: var(--card-alt); border-radius: 12px; padding: 14px; margin-top: 10px; }
+  .edit-mode label { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px; }
+  .edit-hours { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .edit-hours span { font-size: 13px; color: var(--text-light); font-weight: 600; min-width: 50px; }
+  .edit-hours input[type="time"] {
+    flex: 1; padding: 10px; border: 2px solid var(--accent); border-radius: 10px;
+    font-size: 18px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none;
+  }
+  .edit-actions { display: flex; gap: 8px; }
 
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .stat-box { background: linear-gradient(135deg, #1a1a1a, #0d0d0d); border-radius: 16px; padding: 18px; text-align: center; border: 1px solid #333; }
@@ -179,9 +191,9 @@
   </div>
 
   <div class="page active" id="page-today">
-    <!-- 1. ¿A qué hora despertó hoy? -->
+    <!-- 1. ¿A QUÉ HORA DESPERTÓ HOY? -->
     <div class="card card-dark">
-      <div class="section-title green center">🌅 ¿A qué hora despertó hoy?</div>
+      <div class="section-title green center">🌅 ¿A QUÉ HORA DESPERTÓ HOY?</div>
       <div class="wake-section">
         <div class="wake-input-row">
           <input type="time" id="wakeTime" value="06:30">
@@ -193,7 +205,7 @@
       </div>
     </div>
 
-    <!-- 2. Próximo bloque en... -->
+    <!-- 2. PRÓXIMO BLOQUE EN... -->
     <div class="countdown-banner" id="countdownBanner" style="display:none;">
       <div class="countdown-label">⏰ PRÓXIMO BLOQUE EN</div>
       <div class="countdown-time" id="countdownTime">--:--</div>
@@ -201,12 +213,12 @@
     </div>
 
     <div class="card" id="timelineCard" style="display:none;">
-      <div class="section-title">📋 Rutina del día</div>
+      <div class="section-title">📋 RUTINA DEL DÍA</div>
       <div class="timeline" id="timeline"></div>
     </div>
 
     <div class="card" id="statsCard" style="display:none;">
-      <div class="section-title green">📊 Resumen del día</div>
+      <div class="section-title green">📊 RESUMEN DEL DÍA</div>
       <div class="stats-grid">
         <div class="stat-box"><div class="stat-value" id="statAwake">--</div><div class="stat-label">Despierto</div></div>
         <div class="stat-box"><div class="stat-value blue" id="statSleep">--</div><div class="stat-label">Durmió</div></div>
@@ -260,14 +272,13 @@
       <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos manualmente.</p>
       
       <div id="defaultTimesContainer">
-        <!-- Generado dinámicamente según número de siestas -->
+        <!-- Dinámico según siestas -->
       </div>
 
       <div style="margin-top:12px; text-align:center;">
         <button class="btn btn-outline-blue btn-small" onclick="addCustomBlock()" style="width:100%;">+ Agregar bloque</button>
       </div>
 
-      <!-- BOTONES GUARDAR / RESTABLECER MOVIDOS ABAJO DE ÚLTIMA VENTANA DESPIERTO -->
       <div class="controls" style="margin-top:20px;display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="applySettings()" style="flex:1;">💾 Guardar cambios</button>
         <button class="btn btn-outline" onclick="resetDefaults()" style="flex:1;">↺ Restablecer</button>
@@ -300,9 +311,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CONFIGURACIÓN & RELOJ EN VIVO
-// ═══════════════════════════════════════════════════════════════
 function updateLiveClock() {
   const now = new Date();
   const hours = now.getHours().toString().padStart(2, '0');
@@ -325,15 +333,25 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let customBlocks = [];
+const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:8, source:'takingcarababies' };
+let settings = { ...DEFAULTS };
+
+let customBlocks = [
+  { id: 'w1', label: '1ª ventana despierto', value: 105, type: 'awake' },
+  { id: 'n1', label: '1ª siesta', value: 75, type: 'sleep' },
+  { id: 'w2', label: '2ª ventana despierto', value: 120, type: 'awake' },
+  { id: 'n2', label: '2ª siesta', value: 75, type: 'sleep' },
+  { id: 'w3', label: '3ª ventana despierto', value: 135, type: 'awake' },
+  { id: 'n3', label: '3ª siesta', value: 45, type: 'sleep' },
+  { id: 'w4', label: 'Última ventana despierto', value: 180, type: 'awake' }
+];
+
 let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
+let editingBlockIndex = null;
 let currentUser = null;
 
-// ═══════════════════════════════════════════════════════════════
-// RECOMENDACIONES DE EDAD Y FUENTE (DINÁMICAS)
-// ═══════════════════════════════════════════════════════════════
 function applyAgeBasedSchedule() {
   const age = parseInt(document.getElementById('babyAge').value) || 8;
   const source = document.getElementById('sourceSelect').value || 'takingcarababies';
@@ -393,7 +411,6 @@ function applyAgeBasedSchedule() {
   }
 
   renderDefaultTimesInputs();
-  showToast(`🎯 Detalles actualizados (${sourceName})`);
 }
 
 function renderDefaultTimesInputs() {
@@ -425,10 +442,8 @@ function addCustomBlock() {
   showToast('➕ Bloque agregado');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// GENERACIÓN DE RUTINA
-// ═══════════════════════════════════════════════════════════════
 function timeToMinutes(timeStr) {
+  if (!timeStr) return 0;
   const [h, m] = timeStr.split(':').map(Number);
   return h * 60 + m;
 }
@@ -443,7 +458,7 @@ function minutesToTime(mins) {
 function formatDuration(mins) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  if (h === 0) return `${m}min`;
+  if (h === 0) return `${m}m`;
   if (m === 0) return `${h}h`;
   return `${h}h ${m}m`;
 }
@@ -468,7 +483,7 @@ function generateSchedule() {
       start: startStr,
       end: endStr
     });
-    actualTimes.push({ start: startStr, end: endStr });
+    actualTimes.push({ start: startStr, end: endStr, edited: false });
   });
 
   currentBlockIndex = 0;
@@ -482,25 +497,58 @@ function generateSchedule() {
 
 function renderTimeline() {
   const container = document.getElementById('timeline');
+  if (!schedule || schedule.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">No hay rutina activa.</div>';
+    return;
+  }
+
   let html = '';
   schedule.forEach((block, idx) => {
     const times = actualTimes[idx] || block;
     const isCurrent = idx === currentBlockIndex;
+    const isEditing = editingBlockIndex === idx;
+
     let statusClass = idx < currentBlockIndex ? 'done' : (isCurrent ? 'active' : 'upcoming');
     let statusLabel = idx < currentBlockIndex ? 'Completado' : (isCurrent ? 'En curso' : 'Pendiente');
 
     html += `
-      <div class="block ${block.type} ${idx < currentBlockIndex ? 'past' : ''} ${isCurrent ? 'current' : ''}">
+      <div class="block ${block.type} ${idx < currentBlockIndex ? 'past' : ''} ${isCurrent ? 'current' : ''} ${isEditing ? 'editing' : ''}">
         <div class="block-header">
           <span class="block-type">${block.label}</span>
           <span class="block-time">${times.start} - ${times.end}</span>
         </div>
         <div class="block-duration">${formatDuration(block.duration)}</div>
-        <span class="block-status status-${statusClass}">${statusLabel}</span>
-        ${isCurrent ? `<div class="block-actions"><button class="btn btn-primary btn-small" onclick="completeBlock(${idx})">✓ Marcar Terminado</button></div>` : ''}
+        <div>
+          <span class="block-status status-${statusClass}">${statusLabel}</span>
+          ${times.edited ? '<span class="block-status status-edited">Modificado</span>' : ''}
+        </div>
+
+        ${isEditing ? `
+          <div class="edit-mode">
+            <label>Ajustar horarios</label>
+            <div class="edit-hours">
+              <span>Inicio:</span>
+              <input type="time" id="editStart_${idx}" value="${times.start}">
+            </div>
+            <div class="edit-hours">
+              <span>Fin:</span>
+              <input type="time" id="editEnd_${idx}" value="${times.end}">
+            </div>
+            <div class="edit-actions">
+              <button class="btn btn-primary btn-small" onclick="saveBlockEdit(${idx})">Guardar</button>
+              <button class="btn btn-outline btn-small" onclick="cancelBlockEdit()">Cancelar</button>
+            </div>
+          </div>
+        ` : `
+          <div class="block-actions">
+            ${isCurrent ? `<button class="btn btn-primary btn-small" onclick="completeBlock(${idx})">✓ Marcar Terminado</button>` : ''}
+            <button class="btn btn-outline-blue btn-small" onclick="editBlock(${idx})">✏️ Editar</button>
+          </div>
+        `}
       </div>
     `;
   });
+
   container.innerHTML = html;
 }
 
@@ -508,6 +556,43 @@ function completeBlock(idx) {
   currentBlockIndex = idx + 1;
   renderTimeline();
   showToast('🎉 Bloque completado');
+}
+
+function editBlock(idx) {
+  editingBlockIndex = idx;
+  renderTimeline();
+}
+
+function cancelBlockEdit() {
+  editingBlockIndex = null;
+  renderTimeline();
+}
+
+function saveBlockEdit(idx) {
+  const startVal = document.getElementById(`editStart_${idx}`).value;
+  const endVal = document.getElementById(`editEnd_${idx}`).value;
+
+  if (!startVal || !endVal) return showToast('⚠️ Horarios inválidos');
+
+  actualTimes[idx] = { start: startVal, end: endVal, edited: true };
+  editingBlockIndex = null;
+
+  let curMins = timeToMinutes(endVal);
+  for (let i = idx + 1; i < schedule.length; i++) {
+    const dur = schedule[i].duration;
+    const nStart = minutesToTime(curMins);
+    const nEnd = minutesToTime(curMins + dur);
+    curMins += dur;
+    if (!actualTimes[i].edited) {
+      actualTimes[i] = { start: nStart, end: nEnd, edited: false };
+    } else {
+      curMins = timeToMinutes(actualTimes[i].end);
+    }
+  }
+
+  renderTimeline();
+  renderStats();
+  showToast('✏️ Cambios guardados');
 }
 
 function renderStats() {
@@ -536,19 +621,27 @@ function updateTimer() {
   const [h, m] = times.end.split(':').map(Number);
   target.setHours(h, m, 0, 0);
 
-  let diff = Math.floor((target - now) / 1000);
-  if (diff < 0) diff = 0;
+  let diffMs = target - now;
+  
+  if (diffMs <= 0) {
+    document.getElementById('countdownTime').textContent = "0min";
+    document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} finalizada`;
+    document.getElementById('countdownBanner').style.display = 'block';
+    return;
+  }
 
-  const mins = Math.floor(diff / 60);
-  document.getElementById('countdownTime').textContent = `${mins}min`;
-  document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} termina en`;
+  const totalMins = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+
+  let displayStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}min`;
+
+  document.getElementById('countdownTime').textContent = displayStr;
+  document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} termina a las ${times.end}`;
   document.getElementById('countdownBanner').style.display = 'block';
 }
 setInterval(updateTimer, 1000);
 
-// ═══════════════════════════════════════════════════════════════
-// UTILIDADES E INTERFAZ
-// ═══════════════════════════════════════════════════════════════
 function setNow() {
   const now = new Date();
   const str = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -610,7 +703,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Inicialización automática
 applyAgeBasedSchedule();
 </script>
 </body>
