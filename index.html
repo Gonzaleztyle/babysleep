@@ -150,12 +150,13 @@
   .toast.blue { background: var(--accent); color: white; box-shadow: 0 4px 20px rgba(41,98,255,0.3); }
   .toast.alert { background: var(--alert); color: #000; box-shadow: 0 4px 20px rgba(255,193,7,0.3); }
 
+  /* Menú inferior corregido (centrado exacto) */
   .tab-bar {
     position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid #333;
-    display: flex; justify-around: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
+    display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
   }
-  .tab-btn { background: none; border: none; font-size: 11px; font-weight: 700; color: #666; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 20px; font-family: inherit; transition: color 0.2s; }
+  .tab-btn { background: none; border: none; font-size: 11px; font-weight: 700; color: #666; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 20px; font-family: inherit; transition: color 0.2s; cursor: pointer; }
   .tab-btn.active { color: var(--primary); }
   .tab-btn span { font-size: 22px; }
 
@@ -329,13 +330,34 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// Reloj en vivo para la hora actual centrada
+// Reloj en vivo y avance automático de bloques según hora actual
 function updateLiveClock() {
   const now = new Date();
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
   const clockEl = document.getElementById('liveClock');
   if (clockEl) clockEl.textContent = `${hours}:${minutes}`;
+
+  // Verificar avance automático de bloque
+  if (schedule && schedule.length > 0 && actualTimes && actualTimes.length > 0) {
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    let updated = false;
+
+    while (currentBlockIndex < actualTimes.length) {
+      const endMins = timeToMinutes(actualTimes[currentBlockIndex].end);
+      if (currentMins >= endMins && currentBlockIndex < actualTimes.length - 1) {
+        currentBlockIndex++;
+        updated = true;
+      } else {
+        break;
+      }
+    }
+
+    if (updated) {
+      render();
+      saveToFirestore();
+    }
+  }
 }
 setInterval(updateLiveClock, 1000);
 updateLiveClock();
@@ -371,15 +393,9 @@ let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
 let editingBlockIndex = null;
-let vibrationEnabled = false;
-let soundEnabled = false;
-let alertTimer = null;
-let lastAlertedBlock = -1;
 let currentUser = null;
 let isOnline = navigator.onLine;
 let pendingSync = false;
-let userEditedTimes = false;
-let isEditingWakeTime = false;
 
 function applyAgeBasedSchedule() {
   const age = parseInt(document.getElementById('babyAge').value) || 8;
@@ -396,7 +412,7 @@ function applyAgeBasedSchedule() {
     if (document.getElementById('row_n3')) document.getElementById('row_n3').style.display = 'none';
     if (document.getElementById('row_w4')) document.getElementById('row_w4').style.display = 'none';
 
-    detailContent.innerHTML = `<strong>${age} meses</strong><br>Siestas: 2 por día<br>Wake windows: 2.5 - 3.25h<br><em>Nota: Transición a 2 siestas recomendada.</em>`;
+    detailContent.innerHTML = `<strong>${age} meses</strong><br>Siestas: 2 por día<br>Wake windows: 2.5 - 3.25h<br><em>Nota: Transición a 2 siestas completada.</em>`;
   } else {
     document.getElementById('w1').value = 105;
     document.getElementById('n1').value = 75;
@@ -424,17 +440,10 @@ function addCustomBlock() {
   showToast('➕ Bloque agregado');
 }
 
-function updateWakeDisplay() {
-  const wakeVal = document.getElementById('wakeTime').value;
-  const disp = document.getElementById('wakeDisplay');
-  if (disp) disp.textContent = wakeVal || "07:00";
-}
-
 function setNow() {
   const now = new Date();
   const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   document.getElementById('wakeTime').value = timeStr;
-  updateWakeDisplay();
 }
 
 function showToast(text, type = 'normal') {
@@ -567,7 +576,6 @@ async function loadFromFirestore() {
 
       if (data.today && data.today.date === new Date().toDateString()) {
         document.getElementById('wakeTime').value = data.today.wakeTime || '07:00';
-        updateWakeDisplay();
         schedule = data.today.schedule || [];
         currentBlockIndex = data.today.currentBlockIndex || 0;
         actualTimes = data.today.actualTimes || [];
@@ -651,7 +659,6 @@ function loadFromLocalStorage() {
       if (data.date === new Date().toDateString()) {
         if (data.wakeTime) {
           document.getElementById('wakeTime').value = data.wakeTime;
-          updateWakeDisplay();
         }
         schedule = data.schedule || [];
         currentBlockIndex = data.currentBlockIndex || 0;
@@ -718,8 +725,19 @@ function generateSchedule() {
     { type: 'awake', label: 'Última Ventana Despierto', duration: w3, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w3) }
   ];
 
-  currentBlockIndex = 0;
   actualTimes = schedule.map(s => ({ start: s.start, end: s.end, edited: false }));
+
+  // Determinar automáticamente el bloque según la hora del reloj
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  currentBlockIndex = 0;
+
+  for (let i = 0; i < actualTimes.length; i++) {
+    const endMins = timeToMinutes(actualTimes[i].end);
+    if (nowMins >= endMins && i < actualTimes.length - 1) {
+      currentBlockIndex = i + 1;
+    }
+  }
 
   document.getElementById('timelineCard').style.display = 'block';
   document.getElementById('statsCard').style.display = 'block';
@@ -777,6 +795,7 @@ function saveBlockEdit(index) {
 function render() {
   renderTimeline();
   renderStats();
+  updateTimer();
 }
 
 function renderTimeline() {
@@ -874,28 +893,38 @@ function updateTimer() {
   }
 
   const currentTimes = actualTimes[currentBlockIndex] || schedule[currentBlockIndex];
-  const targetEnd = currentTimes.end;
+  if (!currentTimes || !currentTimes.end) {
+    document.getElementById('countdownBanner').style.display = 'none';
+    return;
+  }
 
+  const targetEnd = currentTimes.end;
   const now = new Date();
   const target = new Date();
   const [h, m] = targetEnd.split(':').map(Number);
+  
+  if (isNaN(h) || isNaN(m)) {
+    document.getElementById('countdownBanner').style.display = 'none';
+    return;
+  }
+
   target.setHours(h, m, 0, 0);
 
   let diffMs = target - now;
   if (diffMs < 0) {
-    document.getElementById('countdownTime').textContent = "00:00:00";
+    document.getElementById('countdownTime').textContent = "0min";
     document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} finalizada`;
     document.getElementById('countdownBanner').style.display = 'block';
     return;
   }
 
-  const secs = Math.floor((diffMs / 1000) % 60);
-  const mins = Math.floor((diffMs / (1000 * 60)) % 60);
-  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+  const totalMins = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
 
-  const formatted = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  let displayStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}min`;
 
-  document.getElementById('countdownTime').textContent = formatted;
+  document.getElementById('countdownTime').textContent = displayStr;
   document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} (Termina ${targetEnd})`;
   document.getElementById('countdownBanner').style.display = 'block';
 }
