@@ -84,7 +84,7 @@
   .block.sleep::before { background: var(--sleep); }
   .block.awake { background: var(--awake-bg); border-color: var(--awake); }
   .block.awake::before { background: var(--awake); }
-  .block.past { opacity: 0.45; }
+  .block.past { opacity: 0.55; }
   .block.current { box-shadow: 0 0 0 3px var(--primary), 0 8px 32px rgba(0,200,83,0.2); transform: scale(1.02); }
   .block.editing { box-shadow: 0 0 0 3px var(--accent), 0 8px 32px rgba(41,98,255,0.2); }
 
@@ -139,7 +139,7 @@
   .tab-bar {
     position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid #333;
-    display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
+    display: flex; justify-around: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
   }
   .tab-btn { background: none; border: none; font-size: 11px; font-weight: 700; color: #666; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 20px; font-family: inherit; transition: color 0.2s; cursor: pointer; }
   .tab-btn.active { color: var(--primary); }
@@ -177,7 +177,7 @@
     </div>
   </div>
 
-  <!-- User Info (hidden initially) -->
+  <!-- User Info -->
   <div class="card card-dark" id="userCard" style="display:none;">
     <div class="user-info">
       <img id="userPhoto" src="" alt="">
@@ -207,7 +207,7 @@
 
     <!-- 2. PRÓXIMO BLOQUE EN... -->
     <div class="countdown-banner" id="countdownBanner" style="display:none;">
-      <div class="countdown-label">⏰ PRÓXIMO BLOQUE EN</div>
+      <div class="countdown-label" id="countdownLabel">⏰ PRÓXIMO BLOQUE EN</div>
       <div class="countdown-time" id="countdownTime">--:--</div>
       <div class="countdown-event" id="countdownEvent">--</div>
     </div>
@@ -272,7 +272,7 @@
       <p style="font-size:13px;color:var(--text-light);margin-bottom:14px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos manualmente.</p>
       
       <div id="defaultTimesContainer">
-        <!-- Dinámico según siestas -->
+        <!-- Dinámico -->
       </div>
 
       <div style="margin-top:12px; text-align:center;">
@@ -316,6 +316,11 @@ function updateLiveClock() {
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
   document.getElementById('liveClock').textContent = `${hours}:${minutes}`;
+  
+  // Actualizar automáticante el estado activo del bloque en vivo
+  if (schedule.length > 0) {
+    updateActiveBlockAutomatically();
+  }
 }
 setInterval(updateLiveClock, 1000);
 updateLiveClock();
@@ -486,13 +491,39 @@ function generateSchedule() {
     actualTimes.push({ start: startStr, end: endStr, edited: false });
   });
 
-  currentBlockIndex = 0;
   document.getElementById('timelineCard').style.display = 'block';
   document.getElementById('statsCard').style.display = 'block';
 
+  updateActiveBlockAutomatically();
+  showToast('✅ Rutina generada');
+}
+
+// DETERMINACIÓN AUTOMÁTICA DEL BLOQUE SEGÚN HORA ACTUAL
+function updateActiveBlockAutomatically() {
+  if (!actualTimes || actualTimes.length === 0) return;
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  let foundIndex = actualTimes.length - 1; // Por defecto el último si ya pasó todo el día
+
+  for (let i = 0; i < actualTimes.length; i++) {
+    const startMins = timeToMinutes(actualTimes[i].start);
+    const endMins = timeToMinutes(actualTimes[i].end);
+
+    if (nowMins < endMins) {
+      foundIndex = i;
+      break;
+    }
+  }
+
+  if (currentBlockIndex !== foundIndex) {
+    currentBlockIndex = foundIndex;
+  }
+
   renderTimeline();
   renderStats();
-  showToast('✅ Rutina generada');
+  updateTimer();
 }
 
 function renderTimeline() {
@@ -541,8 +572,7 @@ function renderTimeline() {
           </div>
         ` : `
           <div class="block-actions">
-            ${isCurrent ? `<button class="btn btn-primary btn-small" onclick="completeBlock(${idx})">✓ Marcar Terminado</button>` : ''}
-            <button class="btn btn-outline-blue btn-small" onclick="editBlock(${idx})">✏️ Editar</button>
+            <button class="btn btn-outline-blue btn-small" onclick="editBlock(${idx})">✏️ Editar horario</button>
           </div>
         `}
       </div>
@@ -550,12 +580,6 @@ function renderTimeline() {
   });
 
   container.innerHTML = html;
-}
-
-function completeBlock(idx) {
-  currentBlockIndex = idx + 1;
-  renderTimeline();
-  showToast('🎉 Bloque completado');
 }
 
 function editBlock(idx) {
@@ -577,6 +601,7 @@ function saveBlockEdit(idx) {
   actualTimes[idx] = { start: startVal, end: endVal, edited: true };
   editingBlockIndex = null;
 
+  // Recalcular bloques siguientes partiendo de la nueva hora de fin
   let curMins = timeToMinutes(endVal);
   for (let i = idx + 1; i < schedule.length; i++) {
     const dur = schedule[i].duration;
@@ -590,9 +615,8 @@ function saveBlockEdit(idx) {
     }
   }
 
-  renderTimeline();
-  renderStats();
-  showToast('✏️ Cambios guardados');
+  updateActiveBlockAutomatically();
+  showToast('✏️ Horarios ajustados');
 }
 
 function renderStats() {
@@ -622,7 +646,7 @@ function updateTimer() {
   target.setHours(h, m, 0, 0);
 
   let diffMs = target - now;
-  
+
   if (diffMs <= 0) {
     document.getElementById('countdownTime').textContent = "0min";
     document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} finalizada`;
@@ -640,7 +664,6 @@ function updateTimer() {
   document.getElementById('countdownEvent').textContent = `${schedule[currentBlockIndex].label} termina a las ${times.end}`;
   document.getElementById('countdownBanner').style.display = 'block';
 }
-setInterval(updateTimer, 1000);
 
 function setNow() {
   const now = new Date();
