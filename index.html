@@ -184,7 +184,7 @@
   <h1>🌙 Baby Sleep</h1>
   <p class="subtitle">Tracker de sueño inteligente</p>
 
-  <!-- HORA ACTUAL CENTRADA (PDF Pág 1) -->
+  <!-- HORA ACTUAL CENTRADA -->
   <div class="current-time-header" id="liveClock">--:--</div>
 
   <!-- Auth Section -->
@@ -212,11 +212,10 @@
   </div>
 
   <div class="page active" id="page-today">
-    <!-- ¿A QUÉ HORA DESPERTÓ HOY? (MOVIDO ARRIBA Y TÍTULO CENTRADO - PDF Pág 1) -->
+    <!-- ¿A QUÉ HORA DESPERTÓ HOY? (MOVIDO ARRIBA Y TÍTULO CENTRADO) -->
     <div class="card card-dark">
       <div class="section-title green center">🌅 ¿A qué hora despertó hoy?</div>
       <div class="wake-section">
-        <!-- SE ELIMINÓ EL DISPLAY GIGANTE 07:00 (PDF Pág 1) -->
         <div class="wake-input-row">
           <input type="time" id="wakeTime" value="07:00">
           <button class="btn btn-primary" onclick="setNow()">Ahora</button>
@@ -227,7 +226,7 @@
       </div>
     </div>
 
-    <!-- PRÓXIMO BLOQUE EN (MOVIDO ABAJO - PDF Pág 1) -->
+    <!-- PRÓXIMO BLOQUE EN (MOVIDO ABAJO) -->
     <div class="countdown-banner" id="countdownBanner" style="display:none;">
       <div class="countdown-label">⏰ Próximo bloque en</div>
       <div class="countdown-time" id="countdownTime">--:--</div>
@@ -255,10 +254,10 @@
       <div class="section-title green">🍼 Sobre tu bebé</div>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Configura la edad y la fuente de estudios para obtener recomendaciones personalizadas.</p>
 
-      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="6" min="0" max="48"><span>meses</span></div></div>
+      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="8" min="0" max="48" onchange="applyAgeBasedSchedule()"><span>meses</span></div></div>
 
       <div class="setting-row"><span class="setting-label">Fuente de estudios</span><div class="setting-input" style="flex:1;flex-direction:column;align-items:flex-start;gap:4px;">
-        <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);">
+        <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);" onchange="applyAgeBasedSchedule()">
           <option value="takingcarababies">Taking Cara Babies — Cara Dumaplin, enfermera neonatal</option>
           <option value="huckleberry">Huckleberry — App basada en datos de miles de bebés</option>
           <option value="promedio">Promedio — Media entre ambas fuentes</option>
@@ -279,7 +278,7 @@
     <div class="card">
       <div class="section-title">⚙️ Tiempos por defecto</div>
       
-      <!-- NOTA DE ADVERTENCIA (PDF Pág 2) -->
+      <!-- NOTA DE ADVERTENCIA -->
       <div style="background:var(--warning-bg);border-left:4px solid var(--warning);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:12px;color:#e65100;font-weight:600;">
         ⚠️ <strong>¡Importante!</strong> Debes generar Rutina diaria nuevamente una vez que ajustes los tiempos.
       </div>
@@ -287,28 +286,26 @@
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos manualmente después de aplicar los recomendados.</p>
       
       <div id="defaultTimesContainer">
-        <div class="setting-row"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1" value="105" min="30" max="300"><span>min</span></div></div>
-        <div class="setting-row"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1" value="75" min="15" max="180"><span>min</span></div></div>
-        <div class="setting-row"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2" value="120" min="30" max="300"><span>min</span></div></div>
+        <div class="setting-row"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1" value="150" min="30" max="300"><span>min</span></div></div>
+        <div class="setting-row"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1" value="90" min="15" max="180"><span>min</span></div></div>
+        <div class="setting-row"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2" value="165" min="30" max="300"><span>min</span></div></div>
         <div class="setting-row"><span class="setting-label">2ª siesta</span><div class="setting-input"><input type="number" id="n2" value="75" min="15" max="180"><span>min</span></div></div>
-        <div class="setting-row"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3" value="135" min="30" max="300"><span>min</span></div></div>
-        <div class="setting-row"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3" value="45" min="15" max="180"><span>min</span></div></div>
-        <div class="setting-row"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="180" min="60" max="360"><span>min</span></div></div>
+        <div class="setting-row" id="row_w3"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w3" value="195" min="30" max="300"><span>min</span></div></div>
+        <div class="setting-row" id="row_n3" style="display:none;"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3" value="45" min="15" max="180"><span>min</span></div></div>
+        <div class="setting-row" id="row_w4" style="display:none;"><span class="setting-label">4ª ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="180" min="60" max="360"><span>min</span></div></div>
       </div>
 
-      <!-- BOTÓN AGREGAR BLOQUE (PDF Pág 2) -->
+      <!-- BOTÓN AGREGAR BLOQUE -->
       <div style="margin-top:12px; text-align:center;">
         <button class="btn btn-outline-blue btn-small" onclick="addCustomBlock()" style="width:100%;">+ Agregar bloque</button>
       </div>
 
-      <!-- BOTONES MOVIDOS DEBAJO DE ÚLTIMA VENTANA DESPIERTO (PDF Pág 2) -->
+      <!-- BOTONES MOVIDOS DEBAJO DE LA ÚLTIMA VENTANA -->
       <div class="controls" style="margin-top:20px;display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="applySettings()" style="flex:1;">💾 Guardar cambios</button>
         <button class="btn btn-outline" onclick="resetDefaults()" style="flex:1;">↺ Restablecer</button>
       </div>
     </div>
-
-    <!-- SE ELIMINÓ EL BLOQUE DE FIJAR HORA DE ACOSTAR (PDF Pág 2) -->
 
     <div class="card card-dark">
       <div class="section-title">🗑️ Datos</div>
@@ -334,18 +331,39 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// Reloj en vivo para la hora actual superior
+// Reloj en vivo y avance automático de bloques según la hora actual
 function updateLiveClock() {
   const now = new Date();
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
   const clockEl = document.getElementById('liveClock');
   if (clockEl) clockEl.textContent = `${hours}:${minutes}`;
+
+  // Avance automático de bloque en base a la hora real del sistema
+  if (schedule && schedule.length > 0 && actualTimes && actualTimes.length > 0) {
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    let updated = false;
+
+    while (currentBlockIndex < actualTimes.length) {
+      const endMins = timeToMinutes(actualTimes[currentBlockIndex].end);
+      if (currentMins >= endMins && currentBlockIndex < actualTimes.length - 1) {
+        currentBlockIndex++;
+        updated = true;
+      } else {
+        break;
+      }
+    }
+
+    if (updated) {
+      render();
+      saveToFirestore();
+    }
+  }
 }
 setInterval(updateLiveClock, 1000);
 updateLiveClock();
 
-// Función auxiliar para agregar bloques personalizados
+// Función para agregar bloques personalizados
 function addCustomBlock() {
   const container = document.getElementById('defaultTimesContainer');
   if (!container) return;
@@ -369,12 +387,10 @@ const firebaseConfig = {
   appId: "1:613276258453:web:165d74c31c24522d114b9c"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Enable offline persistence
 db.enablePersistence({ synchronizeTabs: true }).catch(err => {
   console.warn('Persistence failed:', err.code);
 });
@@ -382,41 +398,62 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err => {
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
-const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:6, source:'promedio' };
+const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:8, source:'promedio' };
 let settings = { ...DEFAULTS };
 let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
 let editingBlockIndex = null;
-let vibrationEnabled = false;
-let soundEnabled = false;
-let alertTimer = null;
-let lastAlertedBlock = -1;
 let currentUser = null;
 let isOnline = navigator.onLine;
 let pendingSync = false;
 let userEditedTimes = false;
-let isEditingWakeTime = false;
 
-function updateSourceDisplay() {
-  const sourceSelect = document.getElementById('sourceSelect');
-  if (!sourceSelect) return;
+// Aplicar tiempos recomendados según la edad ingresada (leyendo el input real)
+function applyAgeBasedSchedule() {
+  const ageInput = document.getElementById('babyAge');
+  const age = ageInput ? parseInt(ageInput.value) || 8 : 8;
+  const source = document.getElementById('sourceSelect').value || 'promedio';
+  const detailBox = document.getElementById('ageDetails');
+  const detailContent = document.getElementById('ageDetailContent');
 
-  let userOption = Array.from(sourceSelect.options).find(opt => opt.value === 'user');
+  let sourceName = "Promedio de Guías";
+  if (source === 'takingcarababies') sourceName = "Taking Cara Babies";
+  if (source === 'huckleberry') sourceName = "Huckleberry";
 
-  if (userEditedTimes) {
-    if (!userOption) {
-      userOption = document.createElement('option');
-      userOption.value = 'user';
-      userOption.textContent = 'Definido por el usuario';
-      sourceSelect.appendChild(userOption);
+  if (age >= 8) {
+    document.getElementById('w1').value = 150;
+    document.getElementById('n1').value = 90;
+    document.getElementById('w2').value = 165;
+    document.getElementById('n2').value = 75;
+    document.getElementById('w3').value = 195;
+    
+    if (document.getElementById('row_n3')) document.getElementById('row_n3').style.display = 'none';
+    if (document.getElementById('row_w4')) document.getElementById('row_w4').style.display = 'none';
+
+    let wakeWindows = source === 'huckleberry' ? "2.75 - 3.5h" : (source === 'takingcarababies' ? "2.5 - 3.25h" : "2.6 - 3.3h");
+    if (detailContent) {
+      detailContent.innerHTML = `<strong>${age} meses (${sourceName})</strong><br>Siestas: 2 por día<br>Wake windows: ${wakeWindows}<br><em>Nota: Transición a 2 siestas completada.</em>`;
     }
-    sourceSelect.value = 'user';
   } else {
-    if (userOption) {
-      userOption.remove();
+    document.getElementById('w1').value = 105;
+    document.getElementById('n1').value = 75;
+    document.getElementById('w2').value = 120;
+    document.getElementById('n2').value = 75;
+    document.getElementById('w3').value = 135;
+    if (document.getElementById('n3')) document.getElementById('n3').value = 45;
+    if (document.getElementById('w4')) document.getElementById('w4').value = 180;
+
+    if (document.getElementById('row_n3')) document.getElementById('row_n3').style.display = 'flex';
+    if (document.getElementById('row_w4')) document.getElementById('row_w4').style.display = 'flex';
+
+    let wakeWindows = source === 'huckleberry' ? "1.5 - 2.25h" : (source === 'takingcarababies' ? "1.75 - 2.5h" : "1.6 - 2.3h");
+    if (detailContent) {
+      detailContent.innerHTML = `<strong>${age} meses (${sourceName})</strong><br>Siestas: 3 por día<br>Wake windows: ${wakeWindows}<br><em>Nota: Mantener siestas regulares.</em>`;
     }
   }
+  if (detailBox) detailBox.style.display = 'block';
+  showToast('🎯 Tiempos recomendados aplicados');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -500,12 +537,10 @@ async function saveToFirestore() {
 
   const userRef = getUserRef();
   const todayStr = new Date().toDateString();
-
-  const saveSettings = { ...settings };
   const wakeTimeEl = document.getElementById('wakeTime');
 
   const data = {
-    settings: saveSettings,
+    settings: settings,
     today: {
       wakeTime: wakeTimeEl ? wakeTimeEl.value : '07:00',
       schedule: schedule,
@@ -570,7 +605,6 @@ async function loadFromFirestore() {
 
       updateSyncStatus('☁️ Datos cargados de la nube', true);
       render();
-      renderHistory();
     } else {
       await saveToFirestore();
     }
@@ -578,35 +612,6 @@ async function loadFromFirestore() {
     console.error('Firestore load error:', err);
     updateSyncStatus('📴 Cargando datos locales', false);
     loadFromLocalStorage();
-  }
-}
-
-async function saveHistoryToFirestore(entry) {
-  if (!currentUser || !isOnline) return false;
-
-  const historyRef = getUserRef().collection('history');
-  try {
-    await historyRef.add({
-      ...entry,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    return true;
-  } catch (err) {
-    console.error('History save error:', err);
-    return false;
-  }
-}
-
-async function loadHistoryFromFirestore() {
-  if (!currentUser) return [];
-
-  const historyRef = getUserRef().collection('history');
-  try {
-    const snapshot = await historyRef.orderBy('createdAt', 'desc').limit(60).get();
-    return snapshot.docs.map(doc => doc.data());
-  } catch (err) {
-    console.error('History load error:', err);
-    return loadHistoryLocal();
   }
 }
 
@@ -632,9 +637,7 @@ function updateSyncStatus(text, online) {
 window.addEventListener('online', () => {
   isOnline = true;
   updateAuthUI();
-  if (pendingSync && currentUser) {
-    saveToFirestore();
-  }
+  if (pendingSync && currentUser) saveToFirestore();
 });
 
 window.addEventListener('offline', () => {
@@ -643,7 +646,7 @@ window.addEventListener('offline', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// LOCAL STORAGE (FALLBACK)
+// LOCAL STORAGE
 // ═══════════════════════════════════════════════════════════════
 function saveToLocalStorage() {
   try {
@@ -690,14 +693,8 @@ function loadFromLocalStorage() {
   }
 }
 
-function loadHistoryLocal() {
-  try {
-    return JSON.parse(localStorage.getItem('baby_sleep_history') || '[]');
-  } catch(e) { return []; }
-}
-
 // ═══════════════════════════════════════════════════════════════
-// HELPERS & LOGIC
+// LÓGICA DE RUTINA Y TIEMPOS
 // ═══════════════════════════════════════════════════════════════
 function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
@@ -735,52 +732,58 @@ function showToast(text, type = 'normal') {
   setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
 
-function applyAgeBasedSchedule() {
-  const ageInput = document.getElementById('babyAge');
-  const age = ageInput ? parseInt(ageInput.value) || 6 : 6;
-  const detailBox = document.getElementById('ageDetails');
-  const detailContent = document.getElementById('ageDetailContent');
-
-  if (detailContent) {
-    detailContent.innerHTML = `<strong>Edad seleccionada: ${age} meses</strong><br>Tiempos adaptados según la fuente de estudios elegida.`;
-  }
-  if (detailBox) {
-    detailBox.style.display = 'block';
-  }
-}
-
 function generateSchedule() {
   const wakeTimeEl = document.getElementById('wakeTime');
   const wakeTimeStr = wakeTimeEl ? wakeTimeEl.value : '07:00';
   if (!wakeTimeStr) return showToast('⚠️ Selecciona la hora al despertar', 'alert');
 
   let currentMins = timeToMinutes(wakeTimeStr);
+  const age = parseInt(document.getElementById('babyAge').value) || 8;
 
   const getVal = (id, def) => {
     const el = document.getElementById(id);
     return el ? (parseInt(el.value) || def) : def;
   };
 
-  const w1 = getVal('w1', 105);
-  const n1 = getVal('n1', 75);
-  const w2 = getVal('w2', 120);
+  const w1 = getVal('w1', 150);
+  const n1 = getVal('n1', 90);
+  const w2 = getVal('w2', 165);
   const n2 = getVal('n2', 75);
-  const w3 = getVal('w3', 135);
+  const w3 = getVal('w3', 195);
   const n3 = getVal('n3', 45);
   const w4 = getVal('w4', 180);
 
-  schedule = [
-    { type: 'awake', label: '1ª Ventana Despierto', duration: w1, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w1) },
-    { type: 'sleep', label: '1ª Siesta', duration: n1, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n1) },
-    { type: 'awake', label: '2ª Ventana Despierto', duration: w2, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w2) },
-    { type: 'sleep', label: '2ª Siesta', duration: n2, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n2) },
-    { type: 'awake', label: '3ª Ventana Despierto', duration: w3, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w3) },
-    { type: 'sleep', label: '3ª Siesta', duration: n3, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n3) },
-    { type: 'awake', label: 'Última Ventana Despierto', duration: w4, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w4) }
-  ];
+  if (age >= 8) {
+    schedule = [
+      { type: 'awake', label: '1ª Ventana Despierto', duration: w1, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w1) },
+      { type: 'sleep', label: '1ª Siesta', duration: n1, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n1) },
+      { type: 'awake', label: '2ª Ventana Despierto', duration: w2, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w2) },
+      { type: 'sleep', label: '2ª Siesta', duration: n2, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n2) },
+      { type: 'awake', label: 'Última Ventana Despierto', duration: w3, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w3) }
+    ];
+  } else {
+    schedule = [
+      { type: 'awake', label: '1ª Ventana Despierto', duration: w1, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w1) },
+      { type: 'sleep', label: '1ª Siesta', duration: n1, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n1) },
+      { type: 'awake', label: '2ª Ventana Despierto', duration: w2, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w2) },
+      { type: 'sleep', label: '2ª Siesta', duration: n2, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n2) },
+      { type: 'awake', label: '3ª Ventana Despierto', duration: w3, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w3) },
+      { type: 'sleep', label: '3ª Siesta', duration: n3, start: minutesToTime(currentMins), end: minutesToTime(currentMins += n3) },
+      { type: 'awake', label: 'Última Ventana Despierto', duration: w4, start: minutesToTime(currentMins), end: minutesToTime(currentMins += w4) }
+    ];
+  }
 
   currentBlockIndex = 0;
   actualTimes = schedule.map(s => ({ start: s.start, end: s.end, edited: false }));
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  for (let i = 0; i < actualTimes.length; i++) {
+    const endMins = timeToMinutes(actualTimes[i].end);
+    if (nowMins >= endMins && i < actualTimes.length - 1) {
+      currentBlockIndex = i + 1;
+    }
+  }
 
   const tCard = document.getElementById('timelineCard');
   const sCard = document.getElementById('statsCard');
@@ -842,6 +845,7 @@ function saveBlockEdit(index) {
 function render() {
   renderTimeline();
   renderStats();
+  updateTimer();
 }
 
 function renderTimeline() {
@@ -960,19 +964,25 @@ function updateTimer() {
   const countdownBanner = document.getElementById('countdownBanner');
 
   if (diffMs < 0) {
-    if (countdownTimeEl) countdownTimeEl.textContent = "00:00:00";
+    // Avanzar automáticamente si el tiempo del bloque actual ya pasó
+    if (currentBlockIndex < schedule.length - 1) {
+      currentBlockIndex++;
+      render();
+      saveToFirestore();
+      return;
+    }
+    if (countdownTimeEl) countdownTimeEl.textContent = "0min";
     if (countdownEventEl) countdownEventEl.textContent = `${schedule[currentBlockIndex].label} finalizada`;
     if (countdownBanner) countdownBanner.style.display = 'block';
     return;
   }
 
-  const secs = Math.floor((diffMs / 1000) % 60);
-  const mins = Math.floor((diffMs / (1000 * 60)) % 60);
-  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+  const totalMins = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  const displayStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}min`;
 
-  const formatted = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-  if (countdownTimeEl) countdownTimeEl.textContent = formatted;
+  if (countdownTimeEl) countdownTimeEl.textContent = displayStr;
   if (countdownEventEl) countdownEventEl.textContent = `${schedule[currentBlockIndex].label} (Termina ${targetEnd})`;
   if (countdownBanner) countdownBanner.style.display = 'block';
 }
