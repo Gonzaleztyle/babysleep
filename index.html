@@ -48,6 +48,7 @@
   .current-time-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 4px; }
   .current-time-display { font-size: 22px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; margin-bottom: 16px; }
   .important-note { margin-top: 14px; padding: 12px 14px; background: var(--warning-bg); border: 2px solid var(--warning); border-radius: 12px; font-size: 13px; font-weight: 600; color: #e65100; line-height: 1.5; }
+  .wake-time-display { font-size: 48px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; letter-spacing: -1px; margin-bottom: 16px; }
   .wake-input-row { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; }
   .wake-input-row input[type="time"] {
     font-size: 22px; padding: 12px 18px; border: 2px solid var(--primary); border-radius: 14px;
@@ -111,7 +112,8 @@
   .edit-hours span { font-size: 13px; color: var(--text-light); font-weight: 600; min-width: 50px; }
   .edit-hours input[type="time"] {
     flex: 1; padding: 10px; border: 2px solid var(--accent); border-radius: 10px;
-    font-size: 18px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none;
+    font-size: 18px; font-weight: 700; text-align: center; font-family: inherit;
+    background: #ffffff; color: var(--text); min-height: 44px;
   }
   .edit-actions { display: flex; gap: 8px; }
 
@@ -723,7 +725,14 @@ function updateCurrentTimeDisplay() {
 
 function tick() {
   updateCurrentTimeDisplay();
-  if (schedule.length) { render(); }
+  if (!schedule.length) return;
+  const idx = getCurrentIndex();
+  if (idx !== currentBlockIndex) {
+    render(); // transición de bloque: re-render completo + alerta
+  } else {
+    updateCountdown(); // solo banner, sin tocar la lista
+    renderStats();     // solo números del resumen
+  }
 }
 setInterval(tick, 1000);
 
@@ -742,6 +751,7 @@ const ORDINALS = ['1ª', '2ª', '3ª'];
 function getWindows() {
   const w = [getNum('w1'), getNum('w2'), getNum('w3'), getNum('w4')];
   const nc = settings.napCount || 3;
+  // Ventanas usadas: w1..w_nc + la última (w4 si 3 siestas, si no w_{nc})
   return w.slice(0, nc).concat([nc === 3 ? w[3] : w[nc]]);
 }
 
