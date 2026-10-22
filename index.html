@@ -351,7 +351,8 @@ if (firebaseOk) {
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
-const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:6, source:'promedio', napCount:3 };
+const DEFAULTS = { w1:105, n1:75, w2:120, n2:75, w3:135, n3:45, w4:180, babyAge:6, source:'promedio', napCount:3,
+  avgSleep: { total: 0, count: 0 }, avgAwake: { total: 0, count: 0 }, lastHistoryDate: '' };
 let settings = { ...DEFAULTS };
 let schedule = [];
 let currentBlockIndex = 0;
@@ -806,6 +807,18 @@ function blockRange(i) {
   };
 }
 
+// Re-tiempo automático: después del bloque i, cada bloque empieza donde termina el
+// anterior y conserva su propia duración (la que se muestra actualmente)
+function cascadeSchedule(i) {
+  let t = blockRange(i).end;
+  for (let j = i + 1; j < schedule.length; j++) {
+    const r = blockRange(j);
+    const dur = r.end - r.start;
+    actualTimes[j] = { start: t, end: t + dur };
+    t += dur;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // RENDER: TIMELINE, ESTADOS, COUNTDOWN, ALERTAS
 // ═══════════════════════════════════════════════════════════════
@@ -894,7 +907,10 @@ function saveEdit(i) {
   const s = document.getElementById('edit-start-' + i).value;
   const e = document.getElementById('edit-end-' + i).value;
   if (!s || !e) { showToast('⚠️ Completa inicio y fin', 'alert'); return; }
-  actualTimes[i] = { start: timeToMinutes(s), end: timeToMinutes(e) };
+  const sm = timeToMinutes(s), em = timeToMinutes(e);
+  if (em <= sm) { showToast('⚠️ El fin debe ser posterior al inicio', 'alert'); return; }
+  actualTimes[i] = { start: sm, end: em };
+  cascadeSchedule(i); // el resto del día se actualiza solo
   editingBlockIndex = null;
   userEditedTimes = true;
   updateSourceDisplay();
@@ -912,6 +928,7 @@ function markStartNow(i) {
 function markEndNow(i) {
   if (!actualTimes[i]) actualTimes[i] = { start: null, end: null };
   actualTimes[i].end = nowMinutes();
+  cascadeSchedule(i); // el resto del día se actualiza solo
   userEditedTimes = true;
   updateSourceDisplay();
   render();
@@ -960,17 +977,38 @@ function renderStats() {
 // ═══════════════════════════════════════════════════════════════
 function finishDay() {
   if (!schedule.length) return;
-  let sleep = 0, naps = 0;
+
+  // Duraciones reales de cada bloque (las que el usuario fue registrando/editando)
+  const sleepDurs = [], awakeDurs = [];
   schedule.forEach((b, i) => {
     const r = blockRange(i);
-    if (b.type === 'sleep') { sleep += r.end - r.start; naps++; }
+    const d = r.end - r.start;
+    if (b.type === 'sleep') sleepDurs.push(d); else awakeDurs.push(d);
   });
+  const sleep = sleepDurs.reduce((a, b) => a + b, 0);
+  const naps = sleepDurs.length;
+  const avgS = naps ? sleep / naps : 0;
+  const avgA = awakeDurs.length ? awakeDurs.reduce((a, b) => a + b, 0) / awakeDurs.length : 0;
+
+  // Acumular promedios históricos (una sola vez por día)
+  const todayStr = new Date().toDateString();
+  if (settings.lastHistoryDate !== todayStr) {
+    sleepDurs.forEach(d => { settings.avgSleep.total += d; settings.avgSleep.count++; });
+    awakeDurs.forEach(d => { settings.avgAwake.total += d; settings.avgAwake.count++; });
+    settings.lastHistoryDate = todayStr;
+    persist();
+  }
+
   const entry = {
     date: new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
     wakeTime: document.getElementById('wakeTime').value,
     bedtime: minutesToTime(blockRange(schedule.length - 1).end),
     totalSleep: formatDuration(sleep),
     naps,
+    avgSleepToday: formatDuration(avgS),
+    avgAwakeToday: formatDuration(avgA),
+    avgSleepAll: settings.avgSleep.count ? formatDuration(settings.avgSleep.total / settings.avgSleep.count) : '--',
+    avgAwakeAll: settings.avgAwake.count ? formatDuration(settings.avgAwake.total / settings.avgAwake.count) : '--',
     age: settings.babyAge,
     source: settings.source
   };
@@ -986,13 +1024,26 @@ async function renderHistory() {
   if (currentUser && isOnline) items = await loadHistoryFromFirestore();
   else items = loadHistoryLocal();
 
+  // Resumen de promedios históricos (según los horarios reales ingresados)
+  let summary = '';
+  if (settings.avgSleep.count || settings.avgAwake.count) {
+    summary = `<div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📐 Promedios reales (${settings.avgSleep.count + settings.avgAwake.count} bloques registrados)</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.7;">
+        😴 Siesta: <strong style="color:var(--accent);">${settings.avgSleep.count ? formatDuration(settings.avgSleep.total / settings.avgSleep.count) : '--'}</strong>
+        &nbsp;·&nbsp; 🌞 Ventana despierto: <strong style="color:var(--primary);">${settings.avgAwake.count ? formatDuration(settings.avgAwake.total / settings.avgAwake.count) : '--'}</strong>
+      </div>
+    </div>`;
+  }
+
   if (!items.length) {
-    container.innerHTML = '<div class="empty-state">Sin registros todavía.<br>Finaliza un día para verlo aquí. 📈</div>';
+    container.innerHTML = summary + '<div class="empty-state">Sin registros todavía.<br>Finaliza un día para verlo aquí. 📈</div>';
     return;
   }
-  container.innerHTML = items.map(x => `<div class="history-item">
+  container.innerHTML = summary + items.map(x => `<div class="history-item">
     <div class="history-date">${x.date} · despertó ${x.wakeTime}</div>
     <div class="history-detail">😴 ${x.totalSleep || '--'} de siesta (${x.naps || 0} siestas) · 🌙 acostó a las ${x.bedtime || '--'}</div>
+    <div class="history-detail">📐 Ese día: siesta <strong>${x.avgSleepToday || '--'}</strong> · despierto <strong>${x.avgAwakeToday || '--'}</strong> &nbsp;|&nbsp; Promedio histórico: siesta <strong>${x.avgSleepAll || '--'}</strong> · despierto <strong>${x.avgAwakeAll || '--'}</strong></div>
   </div>`).join('');
 }
 
