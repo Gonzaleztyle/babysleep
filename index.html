@@ -48,7 +48,6 @@
   .current-time-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 4px; }
   .current-time-display { font-size: 22px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; margin-bottom: 16px; }
   .important-note { margin-top: 14px; padding: 12px 14px; background: var(--warning-bg); border: 2px solid var(--warning); border-radius: 12px; font-size: 13px; font-weight: 600; color: #e65100; line-height: 1.5; }
-  .wake-time-display { font-size: 48px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; letter-spacing: -1px; margin-bottom: 16px; }
   .wake-input-row { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; }
   .wake-input-row input[type="time"] {
     font-size: 22px; padding: 12px 18px; border: 2px solid var(--primary); border-radius: 14px;
@@ -716,6 +715,44 @@ function showImportantNote() {
   if (n) n.style.display = 'block';
 }
 
+// Promedios de duración de bloques: históricos acumulados + lo registrado hoy.
+// Un bloque "registrado" es cualquiera cuyo horario fue editado, marcado o
+// recalculado por la cadena después de una edición del usuario.
+function computeAverages() {
+  const s = { total: settings.avgSleep.total, count: settings.avgSleep.count };
+  const a = { total: settings.avgAwake.total, count: settings.avgAwake.count };
+  const todayStr = new Date().toDateString();
+  const mergedToday = settings.lastHistoryDate === todayStr;
+  if (!mergedToday) {
+    schedule.forEach((b, i) => {
+      const t = actualTimes[i];
+      if (t && (t.start !== null || t.end !== null)) {
+        const r = blockRange(i);
+        const d = r.end - r.start;
+        if (b.type === 'sleep') { s.total += d; s.count++; } else { a.total += d; a.count++; }
+      }
+    });
+  }
+  return {
+    sleepAvg: s.count ? s.total / s.count : null,
+    awakeAvg: a.count ? a.total / a.count : null,
+    totalCount: s.count + a.count
+  };
+}
+
+// Bloques registrados hoy con sus duraciones reales
+function todaySamples() {
+  const s = [], a = [];
+  schedule.forEach((b, i) => {
+    const t = actualTimes[i];
+    if (t && (t.start !== null || t.end !== null)) {
+      const r = blockRange(i);
+      (b.type === 'sleep' ? s : a).push(r.end - r.start);
+    }
+  });
+  return { s, a };
+}
+
 // ═══════════════════════════════════════════════════════════════
 // HORA ACTUAL + COUNTDOWN (cada segundo)
 // ═══════════════════════════════════════════════════════════════
@@ -752,7 +789,6 @@ const ORDINALS = ['1ª', '2ª', '3ª'];
 function getWindows() {
   const w = [getNum('w1'), getNum('w2'), getNum('w3'), getNum('w4')];
   const nc = settings.napCount || 3;
-  // Ventanas usadas: w1..w_nc + la última (w4 si 3 siestas, si no w_{nc})
   return w.slice(0, nc).concat([nc === 3 ? w[3] : w[nc]]);
 }
 
@@ -788,6 +824,7 @@ function generateSchedule() {
   document.getElementById('importantNote').style.display = 'none';
 
   render();
+  renderHistory();
   persist();
   showToast('📅 Rutina generada para hoy');
 }
@@ -910,18 +947,30 @@ function saveEdit(i) {
   const sm = timeToMinutes(s), em = timeToMinutes(e);
   if (em <= sm) { showToast('⚠️ El fin debe ser posterior al inicio', 'alert'); return; }
   actualTimes[i] = { start: sm, end: em };
+  // El bloque anterior termina exactamente cuando empieza este (sin huecos)
+  if (i > 0) {
+    actualTimes[i - 1] = { start: blockRange(i - 1).start, end: sm };
+  }
   cascadeSchedule(i); // el resto del día se actualiza solo
   editingBlockIndex = null;
   userEditedTimes = true;
   updateSourceDisplay();
   render();
+  renderHistory(); // refrescar promedios en vivo
   persist();
-  showToast('💾 Horario actualizado');
+  showToast('💾 Horario y resto del día actualizados');
 }
 
 function markStartNow(i) {
-  actualTimes[i] = { start: nowMinutes(), end: null };
+  const now = nowMinutes();
+  const plannedDur = schedule[i].end - schedule[i].start;
+  actualTimes[i] = { start: now, end: now + plannedDur };
+  if (i > 0) {
+    actualTimes[i - 1] = { start: blockRange(i - 1).start, end: now };
+  }
+  cascadeSchedule(i);
   render();
+  renderHistory();
   persist();
 }
 
@@ -932,6 +981,7 @@ function markEndNow(i) {
   userEditedTimes = true;
   updateSourceDisplay();
   render();
+  renderHistory(); // refrescar promedios en vivo
   persist();
 }
 
@@ -978,7 +1028,7 @@ function renderStats() {
 function finishDay() {
   if (!schedule.length) return;
 
-  // Duraciones reales de cada bloque (las que el usuario fue registrando/editando)
+  // Duraciones mostradas de cada bloque del día
   const sleepDurs = [], awakeDurs = [];
   schedule.forEach((b, i) => {
     const r = blockRange(i);
@@ -987,18 +1037,29 @@ function finishDay() {
   });
   const sleep = sleepDurs.reduce((a, b) => a + b, 0);
   const naps = sleepDurs.length;
-  const avgS = naps ? sleep / naps : 0;
-  const avgA = awakeDurs.length ? awakeDurs.reduce((a, b) => a + b, 0) / awakeDurs.length : 0;
 
-  // Acumular promedios históricos (una sola vez por día)
+  // Promedios de HOY según lo que el usuario registró/editó (si no editó nada, usar todo el día)
+  let ts = todaySamples();
+  if (!ts.s.length && !ts.a.length) {
+    schedule.forEach((b, i) => {
+      const r = blockRange(i);
+      (b.type === 'sleep' ? ts.s : ts.a).push(r.end - r.start);
+    });
+  }
+  const avgS = ts.s.length ? ts.s.reduce((x, y) => x + y, 0) / ts.s.length : 0;
+  const avgA = ts.a.length ? ts.a.reduce((x, y) => x + y, 0) / ts.a.length : 0;
+
+  // Fusionar lo registrado hoy con el histórico (una sola vez por día)
   const todayStr = new Date().toDateString();
   if (settings.lastHistoryDate !== todayStr) {
-    sleepDurs.forEach(d => { settings.avgSleep.total += d; settings.avgSleep.count++; });
-    awakeDurs.forEach(d => { settings.avgAwake.total += d; settings.avgAwake.count++; });
+    const raw = todaySamples();
+    raw.s.forEach(d => { settings.avgSleep.total += d; settings.avgSleep.count++; });
+    raw.a.forEach(d => { settings.avgAwake.total += d; settings.avgAwake.count++; });
     settings.lastHistoryDate = todayStr;
-    persist();
   }
+  persist();
 
+  const all = computeAverages();
   const entry = {
     date: new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
     wakeTime: document.getElementById('wakeTime').value,
@@ -1007,8 +1068,8 @@ function finishDay() {
     naps,
     avgSleepToday: formatDuration(avgS),
     avgAwakeToday: formatDuration(avgA),
-    avgSleepAll: settings.avgSleep.count ? formatDuration(settings.avgSleep.total / settings.avgSleep.count) : '--',
-    avgAwakeAll: settings.avgAwake.count ? formatDuration(settings.avgAwake.total / settings.avgAwake.count) : '--',
+    avgSleepAll: all.sleepAvg !== null ? formatDuration(all.sleepAvg) : '--',
+    avgAwakeAll: all.awakeAvg !== null ? formatDuration(all.awakeAvg) : '--',
     age: settings.babyAge,
     source: settings.source
   };
@@ -1024,15 +1085,17 @@ async function renderHistory() {
   if (currentUser && isOnline) items = await loadHistoryFromFirestore();
   else items = loadHistoryLocal();
 
-  // Resumen de promedios históricos (según los horarios reales ingresados)
+  // Resumen de promedios (en vivo: histórico + lo registrado hoy)
+  const avgs = computeAverages();
   let summary = '';
-  if (settings.avgSleep.count || settings.avgAwake.count) {
+  if (avgs.totalCount > 0) {
     summary = `<div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📐 Promedios reales (${settings.avgSleep.count + settings.avgAwake.count} bloques registrados)</div>
+      <div style="font-size:11px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📐 Promedio de duración de bloques (${avgs.totalCount} registrados)</div>
       <div style="font-size:13px;color:var(--text-muted);line-height:1.7;">
-        😴 Siesta: <strong style="color:var(--accent);">${settings.avgSleep.count ? formatDuration(settings.avgSleep.total / settings.avgSleep.count) : '--'}</strong>
-        &nbsp;·&nbsp; 🌞 Ventana despierto: <strong style="color:var(--primary);">${settings.avgAwake.count ? formatDuration(settings.avgAwake.total / settings.avgAwake.count) : '--'}</strong>
+        😴 Siesta: <strong style="color:var(--accent);">${avgs.sleepAvg !== null ? formatDuration(avgs.sleepAvg) : '--'}</strong>
+        &nbsp;·&nbsp; 🌞 Ventana despierto: <strong style="color:var(--primary);">${avgs.awakeAvg !== null ? formatDuration(avgs.awakeAvg) : '--'}</strong>
       </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Se actualiza automáticamente al editar o marcar horarios</div>
     </div>`;
   }
 
@@ -1074,7 +1137,6 @@ function addBlock() {
   const nc = settings.napCount || 3;
   if (nc >= 3) { showToast('⚠️ Máximo 3 siestas', 'alert'); return; }
   settings.napCount = nc + 1;
-  // Valores por defecto si el campo revelado está vacío/en 0
   if (settings.napCount === 2) {
     if (!getNum('n2')) document.getElementById('n2').value = 60;
     if (!getNum('w3')) document.getElementById('w3').value = 150;
@@ -1133,7 +1195,6 @@ function applyAgeBasedSchedule() {
   const source = document.getElementById('sourceSelect').value;
   const d = getAgeData(age);
 
-  // Ajuste por fuente: TCB usa ventanas algo más cortas, Huckleberry algo más largas
   const adj = source === 'takingcarababies' ? -15 : source === 'huckleberry' ? 10 : 0;
   const t = { ...d.times };
   ['w1', 'w2', 'w3', 'w4'].forEach(k => { t[k] = Math.max(30, (t[k] || 0) + adj); });
