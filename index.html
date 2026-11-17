@@ -82,4 +82,952 @@
 
   .timeline { position: relative; padding-left: 32px; }
   .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, var(--primary), var(--accent)); border-radius: 2px; }
-  .block { position: relative; margin-bottom: 12px; border-radius: 1
+  .block { position: relative; margin-bottom: 12px; border-radius: 16px; padding: 16px 18px; transition: all 0.2s; border: 2px solid transparent; }
+  .block::before { content: ''; position: absolute; left: -25px; top: 18px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--bg); z-index: 1; box-shadow: 0 0 0 2px var(--bg); }
+  .block.sleep { background: var(--sleep-bg); border-color: var(--sleep); }
+  .block.sleep::before { background: var(--sleep); }
+  .block.awake { background: var(--awake-bg); border-color: var(--awake); }
+  .block.awake::before { background: var(--awake); }
+  .block.past { opacity: 0.45; }
+  .block.current { box-shadow: 0 0 0 3px var(--primary), 0 8px 32px rgba(0,200,83,0.2); transform: scale(1.02); }
+  .block.editing { box-shadow: 0 0 0 3px var(--accent), 0 8px 32px rgba(41,98,255,0.2); }
+
+  .block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .block-type { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
+  .block.sleep .block-type { color: var(--sleep); }
+  .block.awake .block-type { color: var(--awake); }
+  .block-time { font-size: 13px; color: var(--text-light); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .block-duration { font-size: 26px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+  .block-status { font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-top: 8px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; }
+  .status-done { background: #c8e6c9; color: #1b5e20; }
+  .status-active { background: var(--primary); color: #000; }
+  .status-upcoming { background: #f5f5f5; color: var(--text-light); }
+  .status-edited { background: var(--warning-bg); color: #e65100; }
+
+  .block-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .block-actions .btn { flex: 1; min-width: 100px; }
+
+  .edit-mode { background: var(--card-alt); border-radius: 12px; padding: 14px; margin-top: 10px; }
+  .edit-mode label { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px; }
+  .edit-hours { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .edit-hours span { font-size: 13px; color: var(--text-light); font-weight: 600; min-width: 50px; }
+  .edit-hours input[type="time"] {
+    flex: 1; padding: 10px; border: 2px solid var(--accent); border-radius: 10px;
+    font-size: 18px; font-weight: 700; text-align: center; font-family: inherit;
+    background: #ffffff; color: var(--text); min-height: 44px;
+  }
+  .edit-actions { display: flex; gap: 8px; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-box { background: linear-gradient(135deg, #1a1a1a, #0d0d0d); border-radius: 16px; padding: 18px; text-align: center; border: 1px solid #333; }
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
+  .stat-value.blue { color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+  .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .setting-input { display: flex; align-items: center; gap: 8px; }
+  .setting-input input { width: 70px; padding: 10px; border: 2px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none; }
+  .setting-input span { font-size: 12px; color: var(--text-light); font-weight: 600; }
+
+  .history-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { font-weight: 700; color: var(--text); font-size: 14px; }
+  .history-detail { color: var(--text-light); margin-top: 4px; line-height: 1.5; }
+
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--primary); color: #000; padding: 14px 28px; border-radius: 14px;
+    font-size: 15px; font-weight: 700; z-index: 1000; opacity: 0; transition: all 0.3s;
+    pointer-events: none; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,200,83,0.3);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.blue { background: var(--accent); color: white; box-shadow: 0 4px 20px rgba(41,98,255,0.3); }
+  .toast.alert { background: var(--alert); color: #000; box-shadow: 0 4px 20px rgba(255,193,7,0.3); }
+
+  .tab-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid #333;
+    display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
+  }
+  .tab-btn { background: none; border: none; font-size: 11px; font-weight: 700; color: #666; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 20px; font-family: inherit; transition: color 0.2s; }
+  .tab-btn.active { color: var(--primary); }
+  .tab-btn span { font-size: 22px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+
+  /* Auth styles */
+  .auth-card { text-align: center; padding: 40px 20px; }
+  .auth-card h2 { color: var(--primary); font-size: 22px; margin-bottom: 8px; }
+  .auth-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .user-info { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #1a1a1a; border-radius: 14px; margin-bottom: 16px; }
+  .user-info img { width: 36px; height: 36px; border-radius: 50%; }
+  .user-info span { color: var(--text-muted); font-size: 14px; font-weight: 600; }
+  .sync-status { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; }
+  .sync-status.online { color: var(--primary); }
+  .sync-status.offline { color: var(--warning); }
+
+  @supports (padding-top: env(safe-area-inset-top)) { body { padding-top: max(16px, env(safe-area-inset-top)); } }
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="container">
+  <h1>🌙 Baby Sleep</h1>
+  <p class="subtitle">Tracker de sueño inteligente</p>
+
+  <!-- Auth Section -->
+  <div class="card card-dark" id="authCard">
+    <div class="auth-card">
+      <h2>👋 Bienvenido</h2>
+      <p>Inicia sesión para sincronizar tus datos en la nube</p>
+      <button class="btn btn-accent" onclick="signInWithGoogle()" style="width:100%;padding:16px;font-size:16px;">
+        🔑 Iniciar sesión con Google
+      </button>
+    </div>
+  </div>
+
+  <!-- User Info (hidden initially) -->
+  <div class="card card-dark" id="userCard" style="display:none;">
+    <div class="user-info">
+      <img id="userPhoto" src="" alt="">
+      <span id="userName">Usuario</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline btn-small" onclick="signOut()" style="flex:1;">Cerrar sesión</button>
+      <button class="btn btn-primary btn-small" onclick="forceSync()" style="flex:1;">🔄 Sincronizar</button>
+    </div>
+    <div class="sync-status" id="syncStatus">Conectando...</div>
+  </div>
+
+
+  <div class="page active" id="page-today">
+    <div class="card card-dark">
+      <div class="section-title green center" style="justify-content:center;">🌅 ¿A qué hora despertó hoy?</div>
+      <div class="wake-section">
+        <div class="current-time-label" style="text-align:center;">🕒 Hora actual</div>
+        <div class="current-time-display" id="currentTimeDisplay" style="text-align:center;">--:--</div>
+        <div class="wake-input-row">
+          <input type="time" id="wakeTime" value="07:00">
+          <button class="btn btn-primary" onclick="setNow()">Ahora</button>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-accent" onclick="generateSchedule()" style="width:100%;padding:16px;font-size:16px;">📅 Generar rutina del día</button>
+        </div>
+      </div>
+    </div>
+
+  <div class="countdown-banner" id="countdownBanner" style="display:none;">
+    <div class="countdown-label">⏰ Próximo bloque en</div>
+    <div class="countdown-time" id="countdownTime">--:--</div>
+    <div class="countdown-event" id="countdownEvent">--</div>
+  </div>
+
+    <div class="card" id="timelineCard" style="display:none;">
+      <div class="section-title">📋 Rutina del día</div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div class="card" id="statsCard" style="display:none;">
+      <div class="section-title green">📊 Resumen del día</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-value" id="statAwake">--</div><div class="stat-label">Despierto</div></div>
+        <div class="stat-box"><div class="stat-value blue" id="statSleep">--</div><div class="stat-label">Durmió</div></div>
+        <div class="stat-box"><div class="stat-value" id="statNaps">--</div><div class="stat-label">Siestas</div></div>
+        <div class="stat-box"><div class="stat-value blue" id="statBedtime">--</div><div class="stat-label">A dormir</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-settings">
+    <div class="card">
+      <div class="section-title green">🍼 Sobre tu bebé</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Configura la edad y la fuente de estudios para obtener recomendaciones personalizadas.</p>
+
+      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="8" min="0" max="48" onchange="onAgeOrSourceChange()"><span>meses</span></div></div>
+
+      <div class="setting-row"><span class="setting-label">Fuente de estudios</span><div class="setting-input" style="flex:1;flex-direction:column;align-items:flex-start;gap:4px;">
+        <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);" onchange="onAgeOrSourceChange()">
+          <option value="takingcarababies">Taking Cara Babies — Cara Dumaplin, enfermera neonatal</option>
+          <option value="huckleberry">Huckleberry — App basada en datos de miles de bebés</option>
+          <option value="promedio">Promedio — Media entre ambas fuentes</option>
+        </select>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Tiempos recomendados extraídos de guías de especialistas en sueño infantil</span>
+      </div></div>
+
+      <div class="controls" style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="applyAgeBasedSchedule()" style="width:100%;">🎯 Aplicar tiempos recomendados</button>
+      </div>
+
+      <div class="important-note" id="importantNote" style="display:none;">⚠️ <strong>Importante!</strong> Debes generar la Rutina diaria nuevamente una vez que ajustes los tiempos.</div>
+
+      <div id="ageDetails" style="margin-top:14px;padding:14px;background:#1a1a1a;border-radius:12px;border:1px solid #333;display:block;">
+        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">📋 Detalles de la rutina</div>
+        <div id="ageDetailContent" style="font-size:13px;color:var(--text-muted);line-height:1.6;">8 meses: transición a 2 siestas. Siestas: 2 por día. Ventanas de vigilia: 2.5 - 3.25h.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">⚙️ Tiempos por defecto</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos manualmente después de aplicar los recomendados.</p>
+      <div class="setting-row" id="row-w1"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1" value="150" min="30" max="300" onchange="showImportantNote()"><span>min</span></div></div>
+      <div class="setting-row" id="row-n1"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1" value="90" min="15" max="180" onchange="showImportantNote()"><span>min</span></div></div>
+      <div class="setting-row" id="row-w2"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2" value="165" min="30" max="300" onchange="showImportantNote()"><span>min</span></div></div>
+      <div class="setting-row" id="row-n2"><span class="setting-label">2ª siesta</span><div class="setting-input"><input type="number" id="n2" value="75" min="15" max="180" onchange="showImportantNote()"><span>min</span></div></div>
+      <div class="setting-row" id="row-w3" style="display:none;"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3" value="135" min="30" max="300" onchange="showImportantNote()"><span>min</span></div></div>
+      <div class="setting-row" id="row-n3" style="display:none;"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3" value="45" min="15" max="180" onchange="showImportantNote()"><span>min</span></div></div>
+      <div class="setting-row" id="row-w4"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="195" min="60" max="360" onchange="showImportantNote()"><span>min</span></div></div>
+
+      <div id="addBlockWrap" style="display:block;margin-top:14px;">
+        <button class="btn btn-outline-blue" onclick="addBlock()" style="width:100%;">➕ Agregar bloque</button>
+      </div>
+
+      <div class="controls" style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="applySettings()" style="flex:1;">💾 Guardar cambios</button>
+        <button class="btn btn-outline" onclick="resetDefaults()" style="flex:1;">↺ Restablecer</button>
+      </div>
+    </div>
+
+    <div class="card card-dark">
+      <div class="section-title">🗑️ Datos</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Esto borrará todo el historial y la configuración guardada.</p>
+      <div class="controls"><button class="btn btn-danger" onclick="clearAllData()" style="width:100%;">Borrar todo</button></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-history">
+    <div class="card">
+      <div class="section-title">📊 Historial</div>
+      <div id="history"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('today')" id="tab-today"><span>📋</span>Hoy</button>
+  <button class="tab-btn" onclick="switchTab('history')" id="tab-history"><span>📈</span>Historial</button>
+  <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings"><span>⚙️</span>Ajustes</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBPMC66YAtWcrV-UnPcKWGP-ZYs8-jgWR8",
+  authDomain: "baby-sleep-tracker-32717.firebaseapp.com",
+  projectId: "baby-sleep-tracker-32717",
+  storageBucket: "baby-sleep-tracker-32717.firebasestorage.app",
+  messagingSenderId: "613276258453",
+  appId: "1:613276258453:web:165d74c31c24522d114b9c"
+};
+
+// Initialize Firebase (opcional: la app funciona igual sin conexión al CDN)
+let firebaseOk = false;
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    firebaseOk = true;
+  }
+} catch (e) {
+  console.warn('Firebase no disponible:', e);
+}
+const auth = firebaseOk ? firebase.auth() : null;
+const db = firebaseOk ? firebase.firestore() : null;
+
+// Enable offline persistence
+if (firebaseOk) {
+  db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    console.warn('Persistence failed:', err.code);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════════════
+const DEFAULTS = { w1:150, n1:90, w2:165, n2:75, w3:135, n3:45, w4:195, babyAge:8, source:'promedio', napCount:2,
+  avgSleep: { total: 0, count: 0 }, avgAwake: { total: 0, count: 0 }, lastHistoryDate: '' };
+let settings = { ...DEFAULTS };
+let schedule = [];
+let currentBlockIndex = 0;
+let actualTimes = [];
+let editingBlockIndex = null;
+let vibrationEnabled = false;
+let soundEnabled = false;
+let alertTimer = null;
+let lastAlertedBlock = -1;
+let currentUser = null;
+let isOnline = navigator.onLine;
+let pendingSync = false;
+let userEditedTimes = false;
+let isEditingWakeTime = false;
+
+function updateSourceDisplay() {
+  const sourceSelect = document.getElementById('sourceSelect');
+  if (!sourceSelect) return;
+
+  let userOption = Array.from(sourceSelect.options).find(opt => opt.value === 'user');
+
+  if (userEditedTimes) {
+    if (!userOption) {
+      userOption = document.createElement('option');
+      userOption.value = 'user';
+      userOption.textContent = 'Definido por el usuario';
+      sourceSelect.appendChild(userOption);
+    }
+    sourceSelect.value = 'user';
+  } else {
+    if (userOption) {
+      userOption.remove();
+    }
+  }
+}
+
+function updateNapRows() {
+  const age = parseInt(document.getElementById('babyAge').value) || 8;
+  const napCount = age >= 8 ? 2 : 3;
+  settings.napCount = napCount;
+
+  const rowW3 = document.getElementById('row-w3');
+  const rowN3 = document.getElementById('row-n3');
+  const addBlockWrap = document.getElementById('addBlockWrap');
+
+  if (napCount === 2) {
+    if (rowW3) rowW3.style.display = 'none';
+    if (rowN3) rowN3.style.display = 'none';
+    if (addBlockWrap) addBlockWrap.style.display = 'block';
+  } else {
+    if (rowW3) rowW3.style.display = 'flex';
+    if (rowN3) rowN3.style.display = 'flex';
+    if (addBlockWrap) addBlockWrap.style.display = 'none';
+  }
+}
+
+function onAgeOrSourceChange() {
+  updateNapRows();
+  showImportantNote();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════
+function signInWithGoogle() {
+  if (!firebaseOk) {
+    showToast('📴 Sin conexión a la nube. Usando datos locales.', 'alert');
+    return;
+  }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    showToast('❌ Error al iniciar sesión: ' + err.message, 'alert');
+  });
+}
+
+function signOut() {
+  auth.signOut().then(() => {
+    showToast('👋 Sesión cerrada');
+    resetLocalState();
+  });
+}
+
+if (firebaseOk) {
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    updateAuthUI();
+    if (user) {
+      showToast('✅ Conectado como ' + user.displayName);
+      loadFromFirestore();
+    } else {
+      loadFromLocalStorage();
+    }
+  });
+} else {
+  loadFromLocalStorage();
+}
+
+function updateAuthUI() {
+  const authCard = document.getElementById('authCard');
+  const userCard = document.getElementById('userCard');
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (currentUser) {
+    authCard.style.display = 'none';
+    userCard.style.display = 'block';
+    document.getElementById('userName').textContent = currentUser.displayName || 'Usuario';
+    document.getElementById('userPhoto').src = currentUser.photoURL || '';
+    syncStatus.textContent = isOnline ? '☁️ Sincronizado con la nube' : '📴 Modo offline';
+    syncStatus.className = 'sync-status ' + (isOnline ? 'online' : 'offline');
+  } else {
+    authCard.style.display = 'block';
+    userCard.style.display = 'none';
+  }
+}
+
+function resetLocalState() {
+  schedule = [];
+  currentBlockIndex = 0;
+  actualTimes = [];
+  editingBlockIndex = null;
+  settings = { ...DEFAULTS };
+  document.getElementById('timelineCard').style.display = 'none';
+  document.getElementById('statsCard').style.display = 'none';
+  document.getElementById('countdownBanner').style.display = 'none';
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FIRESTORE OPERATIONS
+// ═══════════════════════════════════════════════════════════════
+function getUserRef() {
+  if (!currentUser) return null;
+  return db.collection('users').doc(currentUser.uid);
+}
+
+async function saveToFirestore() {
+  if (!currentUser || !isOnline) {
+    pendingSync = true;
+    return false;
+  }
+
+  const userRef = getUserRef();
+  const todayStr = new Date().toDateString();
+
+  const saveSettings = { ...settings };
+
+  const data = {
+    settings: saveSettings,
+    today: {
+      wakeTime: document.getElementById('wakeTime').value,
+      schedule: schedule,
+      currentBlockIndex: currentBlockIndex,
+      actualTimes: actualTimes,
+      date: todayStr,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    },
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await userRef.set(data, { merge: true });
+    pendingSync = false;
+    updateSyncStatus('☁️ Guardado en la nube', true);
+    return true;
+  } catch (err) {
+    console.error('Firestore save error:', err);
+    pendingSync = true;
+    updateSyncStatus('❌ Error al guardar', false);
+    return false;
+  }
+}
+
+async function loadFromFirestore() {
+  if (!currentUser) return;
+
+  const userRef = getUserRef();
+  try {
+    const doc = await userRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+
+      if (data.settings) {
+        settings = { ...DEFAULTS, ...data.settings };
+        document.getElementById('w1').value = settings.w1;
+        document.getElementById('n1').value = settings.n1;
+        document.getElementById('w2').value = settings.w2;
+        document.getElementById('n2').value = settings.n2;
+        document.getElementById('w3').value = settings.w3;
+        document.getElementById('n3').value = settings.n3;
+        document.getElementById('w4').value = settings.w4;
+        if (settings.babyAge) {
+          document.getElementById('babyAge').value = settings.babyAge;
+        }
+        if (settings.source) {
+          document.getElementById('sourceSelect').value = settings.source;
+        }
+      }
+
+      if (data.today && data.today.date === new Date().toDateString()) {
+        document.getElementById('wakeTime').value = data.today.wakeTime || '07:00';
+        schedule = data.today.schedule || [];
+        currentBlockIndex = data.today.currentBlockIndex || 0;
+        actualTimes = data.today.actualTimes || [];
+
+        if (schedule.length > 0) {
+          document.getElementById('timelineCard').style.display = 'block';
+          document.getElementById('statsCard').style.display = 'block';
+        }
+      }
+
+      updateNapRows();
+      updateSyncStatus('☁️ Datos cargados de la nube', true);
+      render();
+      renderHistory();
+    } else {
+      await saveToFirestore();
+    }
+  } catch (err) {
+    console.error('Firestore load error:', err);
+    updateSyncStatus('📴 Cargando datos locales', false);
+    loadFromLocalStorage();
+  }
+}
+
+async function forceSync() {
+  if (!currentUser) {
+    showToast('❌ Inicia sesión primero', 'alert');
+    return;
+  }
+  showToast('🔄 Sincronizando...', 'blue');
+  await saveToFirestore();
+  await loadFromFirestore();
+  showToast('✅ Sincronización completa');
+}
+
+function updateSyncStatus(text, online) {
+  const el = document.getElementById('syncStatus');
+  if (el) {
+    el.textContent = text;
+    el.className = 'sync-status ' + (online ? 'online' : 'offline');
+  }
+}
+
+window.addEventListener('online', () => {
+  isOnline = true;
+  updateAuthUI();
+  if (pendingSync && currentUser) {
+    saveToFirestore();
+  }
+});
+
+window.addEventListener('offline', () => {
+  isOnline = false;
+  updateAuthUI();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// LOCAL STORAGE (FALLBACK)
+// ═══════════════════════════════════════════════════════════════
+const LS_KEYS = { settings: 'babySleep_settings', today: 'babySleep_today', history: 'babySleep_history' };
+
+function loadFromLocalStorage() {
+  try {
+    const s = localStorage.getItem(LS_KEYS.settings);
+    if (s) {
+      settings = { ...DEFAULTS, ...JSON.parse(s) };
+      applySettingsToInputs();
+    }
+    const t = localStorage.getItem(LS_KEYS.today);
+    if (t) {
+      const data = JSON.parse(t);
+      if (data.date === new Date().toDateString()) {
+        document.getElementById('wakeTime').value = data.wakeTime || '07:00';
+        schedule = data.schedule || [];
+        currentBlockIndex = data.currentBlockIndex || 0;
+        actualTimes = data.actualTimes || [];
+        lastAlertedBlock = (data.lastAlertedBlock !== undefined) ? data.lastAlertedBlock : currentBlockIndex;
+        if (schedule.length > 0) {
+          document.getElementById('timelineCard').style.display = 'block';
+          document.getElementById('statsCard').style.display = 'block';
+        }
+      }
+    }
+    updateNapRows();
+    render();
+    renderHistory();
+  } catch (e) { console.warn('localStorage load error:', e); }
+}
+
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem(LS_KEYS.settings, JSON.stringify(settings));
+    localStorage.setItem(LS_KEYS.today, JSON.stringify({
+      date: new Date().toDateString(),
+      wakeTime: document.getElementById('wakeTime').value,
+      schedule, currentBlockIndex, actualTimes, lastAlertedBlock
+    }));
+  } catch (e) { console.warn('localStorage save error:', e); }
+}
+
+function loadHistoryLocal() {
+  try { return JSON.parse(localStorage.getItem(LS_KEYS.history)) || []; } catch (e) { return []; }
+}
+
+function saveHistoryLocal(entry) {
+  const h = loadHistoryLocal();
+  h.unshift(entry);
+  try { localStorage.setItem(LS_KEYS.history, JSON.stringify(h.slice(0, 60))); } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function timeToMinutes(t) { const p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1]); }
+function minutesToTime(m) {
+  m = ((Math.round(m) % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(m / 60)).padStart(2, '0');
+  const mm = String(m % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+function showToast(text, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.className = 'toast show ' + type;
+  setTimeout(() => { toast.className = 'toast'; }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CORE FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+function setNow() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('wakeTime').value = `${hh}:${mm}`;
+  showToast('🕒 Hora actual establecida');
+}
+
+function applyAgeBasedSchedule() {
+  const age = parseInt(document.getElementById('babyAge').value) || 8;
+  const source = document.getElementById('sourceSelect').value;
+
+  if (age >= 8) {
+    settings.w1 = 150; settings.n1 = 90;
+    settings.w2 = 165; settings.n2 = 75;
+    settings.w4 = 195;
+    settings.napCount = 2;
+  } else {
+    settings.w1 = 105; settings.n1 = 75;
+    settings.w2 = 120; settings.n2 = 75;
+    settings.w3 = 135; settings.n3 = 45;
+    settings.w4 = 180;
+    settings.napCount = 3;
+  }
+  settings.babyAge = age;
+  settings.source = source;
+  userEditedTimes = false;
+
+  applySettingsToInputs();
+  updateNapRows();
+  document.getElementById('importantNote').style.display = 'none';
+  updateSourceDisplay();
+  showToast('🎯 Tiempos recomendados aplicados');
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function applySettingsToInputs() {
+  document.getElementById('w1').value = settings.w1;
+  document.getElementById('n1').value = settings.n1;
+  document.getElementById('w2').value = settings.w2;
+  document.getElementById('n2').value = settings.n2;
+  if (settings.napCount === 3) {
+    document.getElementById('w3').value = settings.w3;
+    document.getElementById('n3').value = settings.n3;
+  }
+  document.getElementById('w4').value = settings.w4;
+  document.getElementById('babyAge').value = settings.babyAge;
+  document.getElementById('sourceSelect').value = settings.source || 'promedio';
+  updateNapRows();
+}
+
+function applySettings() {
+  settings.w1 = parseInt(document.getElementById('w1').value) || DEFAULTS.w1;
+  settings.n1 = parseInt(document.getElementById('n1').value) || DEFAULTS.n1;
+  settings.w2 = parseInt(document.getElementById('w2').value) || DEFAULTS.w2;
+  settings.n2 = parseInt(document.getElementById('n2').value) || DEFAULTS.n2;
+  if (settings.napCount === 3) {
+    settings.w3 = parseInt(document.getElementById('w3').value) || DEFAULTS.w3;
+    settings.n3 = parseInt(document.getElementById('n3').value) || DEFAULTS.n3;
+  }
+  settings.w4 = parseInt(document.getElementById('w4').value) || DEFAULTS.w4;
+  settings.babyAge = parseInt(document.getElementById('babyAge').value) || DEFAULTS.babyAge;
+  settings.source = document.getElementById('sourceSelect').value;
+
+  document.getElementById('importantNote').style.display = 'none';
+  showToast('💾 Ajustes guardados');
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function resetDefaults() {
+  settings = { ...DEFAULTS };
+  applySettingsToInputs();
+  userEditedTimes = false;
+  document.getElementById('importantNote').style.display = 'none';
+  updateSourceDisplay();
+  showToast('↺ Ajustes restablecidos');
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function showImportantNote() {
+  const note = document.getElementById('importantNote');
+  if (note) note.style.display = 'block';
+  userEditedTimes = true;
+  updateSourceDisplay();
+}
+
+function generateSchedule() {
+  const wakeTimeStr = document.getElementById('wakeTime').value || '07:00';
+  let curMin = timeToMinutes(wakeTimeStr);
+  schedule = [];
+
+  const count = settings.napCount || 2;
+
+  if (count === 2) {
+    curMin += settings.w1;
+    let n1Start = minutesToTime(curMin);
+    curMin += settings.n1;
+    let n1End = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w1, start: wakeTimeStr, end: n1Start, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: settings.n1, start: n1Start, end: n1End, title: '1ª Siesta', status: 'upcoming' });
+
+    curMin += settings.w2;
+    let n2Start = minutesToTime(curMin);
+    curMin += settings.n2;
+    let n2End = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w2, start: n1End, end: n2Start, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: settings.n2, start: n2Start, end: n2End, title: '2ª Siesta', status: 'upcoming' });
+
+    curMin += settings.w4;
+    let bedTime = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w4, start: n2End, end: bedTime, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: 0, start: bedTime, end: bedTime, title: 'Hora de dormir', status: 'upcoming' });
+  } else {
+    curMin += settings.w1;
+    let n1Start = minutesToTime(curMin);
+    curMin += settings.n1;
+    let n1End = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w1, start: wakeTimeStr, end: n1Start, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: settings.n1, start: n1Start, end: n1End, title: '1ª Siesta', status: 'upcoming' });
+
+    curMin += settings.w2;
+    let n2Start = minutesToTime(curMin);
+    curMin += settings.n2;
+    let n2End = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w2, start: n1End, end: n2Start, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: settings.n2, start: n2Start, end: n2End, title: '2ª Siesta', status: 'upcoming' });
+
+    curMin += settings.w3;
+    let n3Start = minutesToTime(curMin);
+    curMin += settings.n3;
+    let n3End = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w3, start: n2End, end: n3Start, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: settings.n3, start: n3Start, end: n3End, title: '3ª Siesta', status: 'upcoming' });
+
+    curMin += settings.w4;
+    let bedTime = minutesToTime(curMin);
+    schedule.push({ type: 'awake', duration: settings.w4, start: n3End, end: bedTime, status: 'upcoming' });
+    schedule.push({ type: 'sleep', duration: 0, start: bedTime, end: bedTime, title: 'Hora de dormir', status: 'upcoming' });
+  }
+
+  currentBlockIndex = 0;
+  actualTimes = new Array(schedule.length).fill(null);
+  document.getElementById('timelineCard').style.display = 'block';
+  document.getElementById('statsCard').style.display = 'block';
+
+  showToast('📅 Rutina generada con éxito');
+  render();
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function addBlock() {
+  showToast('➕ Función para agregar bloques personalizados próximamente', 'blue');
+}
+
+function clearAllData() {
+  if (confirm('¿Estás seguro de borrar todos los datos locales?')) {
+    localStorage.clear();
+    resetLocalState();
+    showToast('🗑️ Datos borrados');
+  }
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tabId).classList.add('active');
+  document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function render() {
+  const timelineEl = document.getElementById('timeline');
+  if (!schedule.length) {
+    timelineEl.innerHTML = '<div class="empty-state">Genera una rutina para ver los bloques del día.</div>';
+    return;
+  }
+
+  let html = '';
+  schedule.forEach((b, idx) => {
+    let isPast = idx < currentBlockIndex;
+    let isCurrent = idx === currentBlockIndex;
+    let isEditing = idx === editingBlockIndex;
+
+    let cls = 'block ' + (b.type === 'sleep' ? 'sleep' : 'awake');
+    if (isPast) cls += ' past';
+    if (isCurrent) cls += ' current';
+    if (isEditing) cls += ' editing';
+
+    let titleText = b.title || (b.type === 'sleep' ? 'Siesta' : 'Ventana despierto');
+    let effectiveStart = actualTimes[idx]?.start || b.start;
+    let effectiveEnd = actualTimes[idx]?.end || b.end;
+
+    html += `<div class="${cls}">
+      <div class="block-header">
+        <span class="block-type">${titleText}</span>
+        <span class="block-time">${effectiveStart} - ${effectiveEnd}</span>
+      </div>
+      <div class="block-duration">${b.duration ? b.duration + ' min' : ''}</div>
+      <div class="block-actions">
+        ${isCurrent ? '<button class="btn btn-primary btn-small" onclick="completeBlock(' + idx + ')">✔️ Completar</button>' : ''}
+        <button class="btn btn-outline btn-small" onclick="toggleEditBlock(${idx})">✏️ Editar</button>
+      </div>
+      ${isEditing ? `
+        <div class="edit-mode">
+          <label>Modificar horas del bloque</label>
+          <div class="edit-hours">
+            <span>Inicio</span>
+            <input type="time" id="editStart_${idx}" value="${effectiveStart}">
+          </div>
+          <div class="edit-hours">
+            <span>Fin</span>
+            <input type="time" id="editEnd_${idx}" value="${effectiveEnd}">
+          </div>
+          <div class="edit-actions">
+            <button class="btn btn-primary btn-small" onclick="saveEditBlock(${idx})" style="flex:1;">Guardar</button>
+            <button class="btn btn-outline btn-small" onclick="cancelEditBlock()" style="flex:1;">Cancelar</button>
+          </div>
+        </div>
+      ` : ''}
+    </div>`;
+  });
+
+  timelineEl.innerHTML = html;
+  updateStats();
+  updateCountdown();
+}
+
+function completeBlock(idx) {
+  if (idx < schedule.length - 1) {
+    currentBlockIndex = idx + 1;
+  }
+  showToast('✔️ Bloque completado');
+  render();
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function toggleEditBlock(idx) {
+  editingBlockIndex = (editingBlockIndex === idx) ? null : idx;
+  render();
+}
+
+function cancelEditBlock() {
+  editingBlockIndex = null;
+  render();
+}
+
+function saveEditBlock(idx) {
+  const newStart = document.getElementById(`editStart_${idx}`).value;
+  const newEnd = document.getElementById(`editEnd_${idx}`).value;
+  if (!actualTimes[idx]) actualTimes[idx] = {};
+  actualTimes[idx].start = newStart;
+  actualTimes[idx].end = newEnd;
+
+  const diff = timeToMinutes(newEnd) - timeToMinutes(newStart);
+  if (diff > 0) schedule[idx].duration = diff;
+
+  editingBlockIndex = null;
+  showToast('✏️ Bloque actualizado');
+  render();
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function updateStats() {
+  let awakeTotal = 0;
+  let sleepTotal = 0;
+  let napsCount = 0;
+  let bedtimeVal = '--';
+
+  schedule.forEach((b, idx) => {
+    let dur = b.duration || 0;
+    if (b.type === 'awake') awakeTotal += dur;
+    if (b.type === 'sleep') {
+      if (b.title && b.title.includes('Siesta')) {
+        sleepTotal += dur;
+        napsCount++;
+      }
+      if (b.title && b.title.includes('dormir')) {
+        bedtimeVal = actualTimes[idx]?.start || b.start;
+      }
+    }
+  });
+
+  document.getElementById('statAwake').textContent = Math.floor(awakeTotal / 60) + 'h ' + (awakeTotal % 60) + 'm';
+  document.getElementById('statSleep').textContent = Math.floor(sleepTotal / 60) + 'h ' + (sleepTotal % 60) + 'm';
+  document.getElementById('statNaps').textContent = napsCount;
+  document.getElementById('statBedtime').textContent = bedtimeVal;
+}
+
+function updateCountdown() {
+  const banner = document.getElementById('countdownBanner');
+  if (!schedule.length || currentBlockIndex >= schedule.length) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  const currentBlock = schedule[currentBlockIndex];
+  const targetTimeStr = actualTimes[currentBlockIndex]?.end || currentBlock.end;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const targetMinutes = timeToMinutes(targetTimeStr);
+  let diff = targetMinutes - nowMinutes;
+
+  if (diff < 0) diff += 1440;
+
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+
+  document.getElementById('countdownTime').textContent = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
+  document.getElementById('countdownEvent').textContent = `${currentBlock.title || 'Bloque actual'} termina en`;
+  banner.style.display = 'block';
+}
+
+function renderHistory() {
+  const historyEl = document.getElementById('history');
+  const localHistory = loadHistoryLocal();
+  if (!localHistory.length) {
+    historyEl.innerHTML = '<div class="empty-state">No hay registros en el historial todavía.</div>';
+    return;
+  }
+  let html = '';
+  localHistory.forEach(item => {
+    html += `<div class="history-item">
+      <div class="history-date">${item.date}</div>
+      <div class="history-detail">Despertó: ${item.wakeTime} | Siestas completadas</div>
+    </div>`;
+  });
+  historyEl.innerHTML = html;
+}
+
+setInterval(() => {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const disp = document.getElementById('currentTimeDisplay');
+  if (disp) disp.textContent = `${hh}:${mm}`;
+  if (schedule.length > 0) updateCountdown();
+}, 1000);
+
+loadFromLocalStorage();
+</script>
+</body>
+</html>
