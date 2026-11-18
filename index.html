@@ -121,8 +121,8 @@
   .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
   .setting-row:last-child { border-bottom: none; }
   .setting-label { font-size: 14px; font-weight: 600; color: var(--text); }
-  .setting-input { display: flex; align-items: center; gap: 8px; }
-  .setting-input input { width: 70px; padding: 10px; border: 2px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none; }
+  .setting-input { display: flex; align-items: center; gap: 6px; }
+  .setting-input input { width: 55px; padding: 8px 4px; border: 2px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none; }
   .setting-input span { font-size: 12px; color: var(--text-light); font-weight: 600; }
 
   .history-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -241,7 +241,7 @@
       <div class="section-title green">🍼 Sobre tu bebé</div>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Configura la edad y la fuente de estudios para obtener recomendaciones personalizadas.</p>
 
-      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="8" min="0" max="48" onchange="onAgeOrSourceChange()"><span>meses</span></div></div>
+      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="8" min="0" max="48" onchange="onAgeOrSourceChange()" style="width:70px;"><span>meses</span></div></div>
 
       <div class="setting-row"><span class="setting-label">Fuente de estudios</span><div class="setting-input" style="flex:1;flex-direction:column;align-items:flex-start;gap:4px;">
         <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);" onchange="onAgeOrSourceChange()">
@@ -266,14 +266,17 @@
 
     <div class="card">
       <div class="section-title">⚙️ Tiempos por defecto</div>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos manualmente después de aplicar los recomendados.</p>
-      <div class="setting-row" id="row-w1"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1" value="150" min="30" max="300" onchange="showImportantNote()"><span>min</span></div></div>
-      <div class="setting-row" id="row-n1"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1" value="90" min="15" max="180" onchange="showImportantNote()"><span>min</span></div></div>
-      <div class="setting-row" id="row-w2"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2" value="165" min="30" max="300" onchange="showImportantNote()"><span>min</span></div></div>
-      <div class="setting-row" id="row-n2"><span class="setting-label">2ª siesta</span><div class="setting-input"><input type="number" id="n2" value="75" min="15" max="180" onchange="showImportantNote()"><span>min</span></div></div>
-      <div class="setting-row" id="row-w3" style="display:none;"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3" value="135" min="30" max="300" onchange="showImportantNote()"><span>min</span></div></div>
-      <div class="setting-row" id="row-n3" style="display:none;"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3" value="45" min="15" max="180" onchange="showImportantNote()"><span>min</span></div></div>
-      <div class="setting-row" id="row-w4"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4" value="195" min="60" max="360" onchange="showImportantNote()"><span>min</span></div></div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos en formato de horas y minutos.</p>
+      
+      <div class="setting-row" id="row-w1"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1_h" value="2" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w1_m" value="30" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-n1"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1_h" value="1" min="0" max="4" onchange="showImportantNote()"><span>h</span><input type="number" id="n1_m" value="30" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-w2"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2_h" value="2" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w2_m" value="45" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-n2"><span class="setting-label">2ª siesta</span><div class="setting-input"><input type="number" id="n2_h" value="1" min="0" max="4" onchange="showImportantNote()"><span>h</span><input type="number" id="n2_m" value="15" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      
+      <div class="setting-row" id="row-w3" style="display:none;"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3_h" value="2" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w3_m" value="15" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-n3" style="display:none;"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3_h" value="0" min="0" max="4" onchange="showImportantNote()"><span>h</span><input type="number" id="n3_m" value="45" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      
+      <div class="setting-row" id="row-w4"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4_h" value="3" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w4_m" value="15" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
 
       <div id="addBlockWrap" style="display:block;margin-top:14px;">
         <button class="btn btn-outline-blue" onclick="addBlock()" style="width:100%;">➕ Agregar bloque</button>
@@ -642,6 +645,23 @@ function showToast(text, type = '') {
   setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
 
+// Helper to convert minutes into {h, m} inputs
+function setHM(prefix, totalMins) {
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  const hEl = document.getElementById(prefix + '_h');
+  const mEl = document.getElementById(prefix + '_m');
+  if (hEl) hEl.value = h;
+  if (mEl) mEl.value = m;
+}
+
+// Helper to get minutes from {h, m} inputs
+function getHM(prefix) {
+  const h = parseInt(document.getElementById(prefix + '_h')?.value) || 0;
+  const m = parseInt(document.getElementById(prefix + '_m')?.value) || 0;
+  return h * 60 + m;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // CORE FUNCTIONS
 // ═══════════════════════════════════════════════════════════════
@@ -683,30 +703,30 @@ function applyAgeBasedSchedule() {
 }
 
 function applySettingsToInputs() {
-  document.getElementById('w1').value = settings.w1;
-  document.getElementById('n1').value = settings.n1;
-  document.getElementById('w2').value = settings.w2;
-  document.getElementById('n2').value = settings.n2;
+  setHM('w1', settings.w1);
+  setHM('n1', settings.n1);
+  setHM('w2', settings.w2);
+  setHM('n2', settings.n2);
   if (settings.napCount === 3) {
-    document.getElementById('w3').value = settings.w3;
-    document.getElementById('n3').value = settings.n3;
+    setHM('w3', settings.w3);
+    setHM('n3', settings.n3);
   }
-  document.getElementById('w4').value = settings.w4;
+  setHM('w4', settings.w4);
   document.getElementById('babyAge').value = settings.babyAge;
   document.getElementById('sourceSelect').value = settings.source || 'promedio';
   updateNapRows();
 }
 
 function applySettings() {
-  settings.w1 = parseInt(document.getElementById('w1').value) || DEFAULTS.w1;
-  settings.n1 = parseInt(document.getElementById('n1').value) || DEFAULTS.n1;
-  settings.w2 = parseInt(document.getElementById('w2').value) || DEFAULTS.w2;
-  settings.n2 = parseInt(document.getElementById('n2').value) || DEFAULTS.n2;
+  settings.w1 = getHM('w1');
+  settings.n1 = getHM('n1');
+  settings.w2 = getHM('w2');
+  settings.n2 = getHM('n2');
   if (settings.napCount === 3) {
-    settings.w3 = parseInt(document.getElementById('w3').value) || DEFAULTS.w3;
-    settings.n3 = parseInt(document.getElementById('n3').value) || DEFAULTS.n3;
+    settings.w3 = getHM('w3');
+    settings.n3 = getHM('n3');
   }
-  settings.w4 = parseInt(document.getElementById('w4').value) || DEFAULTS.w4;
+  settings.w4 = getHM('w4');
   settings.babyAge = parseInt(document.getElementById('babyAge').value) || DEFAULTS.babyAge;
   settings.source = document.getElementById('sourceSelect').value;
 
@@ -830,6 +850,14 @@ function switchTab(tabId) {
   document.getElementById('tab-' + tabId).classList.add('active');
 }
 
+function formatHMDisplay(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m} min`;
+}
+
 function render() {
   const timelineEl = document.getElementById('timeline');
   if (!schedule.length) {
@@ -857,7 +885,7 @@ function render() {
         <span class="block-type">${titleText}</span>
         <span class="block-time">${effectiveStart} - ${effectiveEnd}</span>
       </div>
-      <div class="block-duration">${b.duration ? b.duration + ' min' : ''}</div>
+      <div class="block-duration">${b.duration ? formatHMDisplay(b.duration) : ''}</div>
       <div class="block-actions">
         ${isCurrent ? '<button class="btn btn-primary btn-small" onclick="completeBlock(' + idx + ')">✔️ Completar</button>' : ''}
         <button class="btn btn-outline btn-small" onclick="toggleEditBlock(${idx})">✏️ Editar</button>
@@ -944,8 +972,8 @@ function updateStats() {
     }
   });
 
-  document.getElementById('statAwake').textContent = Math.floor(awakeTotal / 60) + 'h ' + (awakeTotal % 60) + 'm';
-  document.getElementById('statSleep').textContent = Math.floor(sleepTotal / 60) + 'h ' + (sleepTotal % 60) + 'm';
+  document.getElementById('statAwake').textContent = formatHMDisplay(awakeTotal);
+  document.getElementById('statSleep').textContent = formatHMDisplay(sleepTotal);
   document.getElementById('statNaps').textContent = napsCount;
   document.getElementById('statBedtime').textContent = bedtimeVal;
 }
@@ -1000,7 +1028,6 @@ setInterval(() => {
   if (schedule.length > 0) updateCountdown();
 }, 1000);
 
-// Auto-set wakeTime input to current time on first load if not set
 window.addEventListener('DOMContentLoaded', () => {
   const now = new Date();
   const hh = String(now.getHours()).padStart(2, '0');
