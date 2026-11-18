@@ -340,7 +340,7 @@ if (firebaseOk) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GLOBAL STATE (Declared safely to prevent runtime ReferenceErrors)
+// GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
 const DEFAULTS = { w1:150, n1:90, w2:165, n2:75, w3:135, n3:45, w4:195, babyAge:8, source:'promedio', napCount:2,
   avgSleep: { total: 0, count: 0 }, avgAwake: { total: 0, count: 0 }, lastHistoryDate: '' };
@@ -349,15 +349,10 @@ let schedule = [];
 let currentBlockIndex = 0;
 let actualTimes = [];
 let editingBlockIndex = null;
-let vibrationEnabled = false;
-let soundEnabled = false;
-let alertTimer = null;
-let lastAlertedBlock = -1;
 let currentUser = null;
 let isOnline = navigator.onLine;
 let pendingSync = false;
 let userEditedTimes = false;
-let isEditingWakeTime = false;
 
 function updateSourceDisplay() {
   const sourceSelect = document.getElementById('sourceSelect');
@@ -628,24 +623,17 @@ function saveHistoryLocal(entry) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HELPERS (Robust Time Parser)
+// HELPERS (Bulletproof Time Parser)
 // ═══════════════════════════════════════════════════════════════
 function timeToMinutes(t) {
   if (!t) return 0;
-  let clean = t.toString().toLowerCase().trim();
-  let isPM = clean.includes('p');
-  let isAM = clean.includes('a');
-  
-  clean = clean.replace(/[^0-9:]/g, '');
-  const parts = clean.split(':');
+  let str = t.toString().trim();
+  const parts = str.split(':');
   if (parts.length < 2) return 0;
-  
-  let hours = parseInt(parts[0]) || 0;
-  const minutes = parseInt(parts[1]) || 0;
-  
-  if (isPM && hours < 12) hours += 12;
-  if (isAM && hours === 12) hours = 0;
-  
+  let hours = parseInt(parts[0], 10) || 0;
+  let minutes = parseInt(parts[1], 10) || 0;
+  if (str.toLowerCase().includes('p') && hours < 12) hours += 12;
+  if (str.toLowerCase().includes('a') && hours === 12) hours = 0;
   return hours * 60 + minutes;
 }
 
