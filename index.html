@@ -457,7 +457,7 @@ function resetLocalState() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FIRESTORE OPERATIONS (Fixed with { merge: true })
+// FIRESTORE OPERATIONS
 // ═══════════════════════════════════════════════════════════════
 function getUserRef() {
   if (!currentUser) return null;
@@ -788,7 +788,19 @@ function generateSchedule() {
     schedule.push({ type: 'sleep', duration: 0, start: bedTime, end: bedTime, title: 'Hora de dormir', status: 'upcoming' });
   }
 
+  // Auto-detect current block based on real time
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
   currentBlockIndex = 0;
+  for (let i = 0; i < schedule.length; i++) {
+    const endMin = timeToMinutes(actualTimes[i]?.end || schedule[i].end);
+    if (nowMin < endMin) {
+      currentBlockIndex = i;
+      break;
+    }
+    if (i === schedule.length - 1) currentBlockIndex = i;
+  }
+
   actualTimes = new Array(schedule.length).fill(null);
   document.getElementById('timelineCard').style.display = 'block';
   document.getElementById('statsCard').style.display = 'block';
@@ -987,6 +999,17 @@ setInterval(() => {
   if (disp) disp.textContent = `${hh}:${mm}`;
   if (schedule.length > 0) updateCountdown();
 }, 1000);
+
+// Auto-set wakeTime input to current time on first load if not set
+window.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const wakeInput = document.getElementById('wakeTime');
+  if (wakeInput && wakeInput.value === '07:00') {
+    wakeInput.value = `${hh}:${mm}`;
+  }
+});
 
 loadFromLocalStorage();
 </script>
