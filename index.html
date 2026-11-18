@@ -333,10 +333,6 @@ try {
 const auth = firebaseOk ? firebase.auth() : null;
 const db = firebaseOk ? firebase.firestore() : null;
 
-if (firebaseOk) {
-  db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
-}
-
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
@@ -461,7 +457,7 @@ function resetLocalState() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FIRESTORE OPERATIONS
+// FIRESTORE OPERATIONS (Fixed with { merge: true })
 // ═══════════════════════════════════════════════════════════════
 function getUserRef() {
   if (!currentUser) return null;
