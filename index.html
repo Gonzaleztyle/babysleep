@@ -623,17 +623,14 @@ function saveHistoryLocal(entry) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HELPERS (Bulletproof Time Parser)
+// HELPERS (Definitive Time Engine)
 // ═══════════════════════════════════════════════════════════════
 function timeToMinutes(t) {
   if (!t) return 0;
-  let str = t.toString().trim();
-  const parts = str.split(':');
+  const parts = t.toString().trim().split(':');
   if (parts.length < 2) return 0;
-  let hours = parseInt(parts[0], 10) || 0;
-  let minutes = parseInt(parts[1], 10) || 0;
-  if (str.toLowerCase().includes('p') && hours < 12) hours += 12;
-  if (str.toLowerCase().includes('a') && hours === 12) hours = 0;
+  const hours = parseInt(parts[0], 10) || 0;
+  const minutes = parseInt(parts[1], 10) || 0;
   return hours * 60 + minutes;
 }
 
