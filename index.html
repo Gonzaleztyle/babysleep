@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Baby Sleep">
@@ -197,7 +198,6 @@
     <div class="sync-status" id="syncStatus">Conectando...</div>
   </div>
 
-
   <div class="page active" id="page-today">
     <div class="card card-dark">
       <div class="section-title green center" style="justify-content:center;">🌅 ¿A qué hora despertó hoy?</div>
@@ -214,11 +214,11 @@
       </div>
     </div>
 
-  <div class="countdown-banner" id="countdownBanner" style="display:none;">
-    <div class="countdown-label">⏰ Próximo bloque en</div>
-    <div class="countdown-time" id="countdownTime">--:--</div>
-    <div class="countdown-event" id="countdownEvent">--</div>
-  </div>
+    <div class="countdown-banner" id="countdownBanner" style="display:none;">
+      <div class="countdown-label">⏰ Próximo bloque en</div>
+      <div class="countdown-time" id="countdownTime">--:--</div>
+      <div class="countdown-event" id="countdownEvent">--</div>
+    </div>
 
     <div class="card" id="timelineCard" style="display:none;">
       <div class="section-title">📋 Rutina del día</div>
@@ -334,9 +334,7 @@ const auth = firebaseOk ? firebase.auth() : null;
 const db = firebaseOk ? firebase.firestore() : null;
 
 if (firebaseOk) {
-  db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-    console.warn('Persistence failed:', err.code);
-  });
+  db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -623,7 +621,7 @@ function saveHistoryLocal(entry) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HELPERS (Definitive Time Engine)
+// HELPERS (Robust Time Engine)
 // ═══════════════════════════════════════════════════════════════
 function timeToMinutes(t) {
   if (!t) return 0;
