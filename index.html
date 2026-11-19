@@ -241,10 +241,10 @@
       <div class="section-title green">🍼 Sobre tu bebé</div>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Configura la edad y la fuente de estudios para obtener recomendaciones personalizadas.</p>
 
-      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="8" min="0" max="48" onchange="onAgeOrSourceChange()" style="width:70px;"><span>meses</span></div></div>
+      <div class="setting-row"><span class="setting-label">Edad del bebé</span><div class="setting-input"><input type="number" id="babyAge" value="8" min="0" max="48" onchange="onAgeChange()" style="width:70px;"><span>meses</span></div></div>
 
       <div class="setting-row"><span class="setting-label">Fuente de estudios</span><div class="setting-input" style="flex:1;flex-direction:column;align-items:flex-start;gap:4px;">
-        <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);" onchange="onAgeOrSourceChange()">
+        <select id="sourceSelect" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);" onchange="onSourceChange()">
           <option value="takingcarababies">Taking Cara Babies — Cara Dumaplin, enfermera neonatal</option>
           <option value="huckleberry">Huckleberry — App basada en datos de miles de bebés</option>
           <option value="promedio">Promedio — Media entre ambas fuentes</option>
@@ -268,15 +268,15 @@
       <div class="section-title">⚙️ Tiempos por defecto</div>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px;">Estos tiempos se usan para generar la rutina. Puedes ajustarlos en formato de horas y minutos.</p>
       
-      <div class="setting-row" id="row-w1"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1_h" value="2" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w1_m" value="30" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
-      <div class="setting-row" id="row-n1"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1_h" value="1" min="0" max="4" onchange="showImportantNote()"><span>h</span><input type="number" id="n1_m" value="30" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
-      <div class="setting-row" id="row-w2"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2_h" value="2" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w2_m" value="45" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
-      <div class="setting-row" id="row-n2"><span class="setting-label">2ª siesta</span><div class="setting-input"><input type="number" id="n2_h" value="1" min="0" max="4" onchange="showImportantNote()"><span>h</span><input type="number" id="n2_m" value="15" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-w1"><span class="setting-label">1ª ventana despierto</span><div class="setting-input"><input type="number" id="w1_h" value="2" min="0" max="6" onchange="onManualTimeChange()"><span>h</span><input type="number" id="w1_m" value="30" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
+      <div class="setting-row" id="row-n1"><span class="setting-label">1ª siesta</span><div class="setting-input"><input type="number" id="n1_h" value="1" min="0" max="4" onchange="onManualTimeChange()"><span>h</span><input type="number" id="n1_m" value="30" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
+      <div class="setting-row" id="row-w2"><span class="setting-label">2ª ventana despierto</span><div class="setting-input"><input type="number" id="w2_h" value="2" min="0" max="6" onchange="onManualTimeChange()"><span>h</span><input type="number" id="w2_m" value="45" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
+      <div class="setting-row" id="row-n2"><span class="setting-label">2ª siesta</span><div class="setting-input"><input type="number" id="n2_h" value="1" min="0" max="4" onchange="onManualTimeChange()"><span>h</span><input type="number" id="n2_m" value="15" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
       
-      <div class="setting-row" id="row-w3" style="display:none;"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3_h" value="2" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w3_m" value="15" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
-      <div class="setting-row" id="row-n3" style="display:none;"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3_h" value="0" min="0" max="4" onchange="showImportantNote()"><span>h</span><input type="number" id="n3_m" value="45" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-w3" style="display:none;"><span class="setting-label">3ª ventana despierto</span><div class="setting-input"><input type="number" id="w3_h" value="2" min="0" max="6" onchange="onManualTimeChange()"><span>h</span><input type="number" id="w3_m" value="15" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
+      <div class="setting-row" id="row-n3" style="display:none;"><span class="setting-label">3ª siesta</span><div class="setting-input"><input type="number" id="n3_h" value="0" min="0" max="4" onchange="onManualTimeChange()"><span>h</span><input type="number" id="n3_m" value="45" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
       
-      <div class="setting-row" id="row-w4"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4_h" value="3" min="0" max="6" onchange="showImportantNote()"><span>h</span><input type="number" id="w4_m" value="15" min="0" max="59" onchange="showImportantNote()"><span>m</span></div></div>
+      <div class="setting-row" id="row-w4"><span class="setting-label">Última ventana despierto</span><div class="setting-input"><input type="number" id="w4_h" value="3" min="0" max="6" onchange="onManualTimeChange()"><span>h</span><input type="number" id="w4_m" value="15" min="0" max="59" onchange="onManualTimeChange()"><span>m</span></div></div>
 
       <div id="addBlockWrap" style="display:block;margin-top:14px;">
         <button class="btn btn-outline-blue" onclick="addBlock()" style="width:100%;">➕ Agregar bloque</button>
@@ -351,6 +351,34 @@ let isOnline = navigator.onLine;
 let pendingSync = false;
 let userEditedTimes = false;
 
+function getRecommendedTimes(age, source) {
+  const isTwoNaps = age >= 8;
+  if (source === 'takingcarababies') {
+    return isTwoNaps
+      ? { w1: 180, n1: 90, w2: 195, n2: 75, w4: 180, napCount: 2, label: 'Taking Cara Babies', windows: '3.0 - 3.25h' }
+      : { w1: 110, n1: 75, w2: 125, n2: 75, w3: 135, n3: 45, w4: 175, napCount: 3, label: 'Taking Cara Babies', windows: '1.8 - 2.25h' };
+  }
+  if (source === 'huckleberry') {
+    return isTwoNaps
+      ? { w1: 150, n1: 90, w2: 165, n2: 75, w4: 210, napCount: 2, label: 'Huckleberry', windows: '2.5 - 3.5h' }
+      : { w1: 100, n1: 80, w2: 120, n2: 75, w3: 135, n3: 45, w4: 180, napCount: 3, label: 'Huckleberry', windows: '1.7 - 2.25h' };
+  }
+  return isTwoNaps
+    ? { w1: 150, n1: 90, w2: 165, n2: 75, w4: 195, napCount: 2, label: 'Promedio', windows: '2.5 - 3.25h' }
+    : { w1: 105, n1: 75, w2: 120, n2: 75, w3: 135, n3: 45, w4: 180, napCount: 3, label: 'Promedio', windows: '1.75 - 2.25h' };
+}
+
+function updateAgeDetails() {
+  const age = parseInt(document.getElementById('babyAge').value) || 8;
+  const selectEl = document.getElementById('sourceSelect');
+  const currentVal = selectEl.value === 'user' ? (settings.source || 'promedio') : selectEl.value;
+  const rec = getRecommendedTimes(age, currentVal);
+  const detailEl = document.getElementById('ageDetailContent');
+  if (detailEl) {
+    detailEl.textContent = `${age} meses (${rec.label}): ${rec.napCount} siestas por día. Ventanas de vigilia: ${rec.windows}.`;
+  }
+}
+
 function updateSourceDisplay() {
   const sourceSelect = document.getElementById('sourceSelect');
   if (!sourceSelect) return;
@@ -365,6 +393,7 @@ function updateSourceDisplay() {
     sourceSelect.value = 'user';
   } else {
     if (userOption) userOption.remove();
+    sourceSelect.value = settings.source || 'promedio';
   }
 }
 
@@ -388,9 +417,40 @@ function updateNapRows() {
   }
 }
 
-function onAgeOrSourceChange() {
+function onAgeChange() {
+  settings.babyAge = parseInt(document.getElementById('babyAge').value) || 8;
   updateNapRows();
-  showImportantNote();
+  updateAgeDetails();
+  showImportantNote(false);
+}
+
+function onSourceChange() {
+  const selectEl = document.getElementById('sourceSelect');
+  const chosenSource = selectEl.value;
+  if (chosenSource === 'user') return;
+
+  const age = parseInt(document.getElementById('babyAge').value) || 8;
+  const rec = getRecommendedTimes(age, chosenSource);
+
+  settings.babyAge = age;
+  settings.source = chosenSource;
+  settings.w1 = rec.w1;
+  settings.n1 = rec.n1;
+  settings.w2 = rec.w2;
+  settings.n2 = rec.n2;
+  settings.w4 = rec.w4;
+  settings.napCount = rec.napCount;
+  if (rec.w3 !== undefined) settings.w3 = rec.w3;
+  if (rec.n3 !== undefined) settings.n3 = rec.n3;
+
+  userEditedTimes = false;
+  applySettingsToInputs();
+  updateSourceDisplay();
+  updateAgeDetails();
+  showImportantNote(false);
+  showToast(`📚 Fuente cambiada a ${rec.label}`);
+  saveToLocalStorage();
+  saveToFirestore();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -453,6 +513,10 @@ function resetLocalState() {
   actualTimes = [];
   editingBlockIndex = null;
   settings = { ...DEFAULTS };
+  userEditedTimes = false;
+  applySettingsToInputs();
+  updateSourceDisplay();
+  updateAgeDetails();
   document.getElementById('timelineCard').style.display = 'none';
   document.getElementById('statsCard').style.display = 'none';
   document.getElementById('countdownBanner').style.display = 'none';
@@ -523,6 +587,7 @@ async function loadFromFirestore() {
         }
       }
       updateNapRows();
+      updateAgeDetails();
       updateSyncStatus('☁️ Datos cargados de la nube', true);
       render();
       renderHistory();
@@ -593,6 +658,7 @@ function loadFromLocalStorage() {
       }
     }
     updateNapRows();
+    updateAgeDetails();
     render();
     renderHistory();
   } catch (e) { console.warn('localStorage load error:', e); }
@@ -645,7 +711,6 @@ function showToast(text, type = '') {
   setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
 
-// Helper to convert minutes into {h, m} inputs
 function setHM(prefix, totalMins) {
   const h = Math.floor(totalMins / 60);
   const m = totalMins % 60;
@@ -655,7 +720,6 @@ function setHM(prefix, totalMins) {
   if (mEl) mEl.value = m;
 }
 
-// Helper to get minutes from {h, m} inputs
 function getHM(prefix) {
   const h = parseInt(document.getElementById(prefix + '_h')?.value) || 0;
   const m = parseInt(document.getElementById(prefix + '_m')?.value) || 0;
@@ -675,28 +739,27 @@ function setNow() {
 
 function applyAgeBasedSchedule() {
   const age = parseInt(document.getElementById('babyAge').value) || 8;
-  const source = document.getElementById('sourceSelect').value;
+  const selectVal = document.getElementById('sourceSelect').value;
+  const source = selectVal === 'user' ? (settings.source || 'promedio') : selectVal;
+  const rec = getRecommendedTimes(age, source);
 
-  if (age >= 8) {
-    settings.w1 = 150; settings.n1 = 90;
-    settings.w2 = 165; settings.n2 = 75;
-    settings.w4 = 195;
-    settings.napCount = 2;
-  } else {
-    settings.w1 = 105; settings.n1 = 75;
-    settings.w2 = 120; settings.n2 = 75;
-    settings.w3 = 135; settings.n3 = 45;
-    settings.w4 = 180;
-    settings.napCount = 3;
-  }
+  settings.w1 = rec.w1;
+  settings.n1 = rec.n1;
+  settings.w2 = rec.w2;
+  settings.n2 = rec.n2;
+  settings.w4 = rec.w4;
+  settings.napCount = rec.napCount;
+  if (rec.w3 !== undefined) settings.w3 = rec.w3;
+  if (rec.n3 !== undefined) settings.n3 = rec.n3;
   settings.babyAge = age;
   settings.source = source;
   userEditedTimes = false;
 
   applySettingsToInputs();
   updateNapRows();
-  document.getElementById('importantNote').style.display = 'none';
   updateSourceDisplay();
+  updateAgeDetails();
+  document.getElementById('importantNote').style.display = 'none';
   showToast('🎯 Tiempos recomendados aplicados');
   saveToLocalStorage();
   saveToFirestore();
@@ -707,14 +770,13 @@ function applySettingsToInputs() {
   setHM('n1', settings.n1);
   setHM('w2', settings.w2);
   setHM('n2', settings.n2);
-  if (settings.napCount === 3) {
-    setHM('w3', settings.w3);
-    setHM('n3', settings.n3);
-  }
+  setHM('w3', settings.w3);
+  setHM('n3', settings.n3);
   setHM('w4', settings.w4);
   document.getElementById('babyAge').value = settings.babyAge;
-  document.getElementById('sourceSelect').value = settings.source || 'promedio';
+  updateSourceDisplay();
   updateNapRows();
+  updateAgeDetails();
 }
 
 function applySettings() {
@@ -728,7 +790,10 @@ function applySettings() {
   }
   settings.w4 = getHM('w4');
   settings.babyAge = parseInt(document.getElementById('babyAge').value) || DEFAULTS.babyAge;
-  settings.source = document.getElementById('sourceSelect').value;
+  const selectVal = document.getElementById('sourceSelect').value;
+  if (selectVal !== 'user') {
+    settings.source = selectVal;
+  }
 
   document.getElementById('importantNote').style.display = 'none';
   showToast('💾 Ajustes guardados');
@@ -738,20 +803,23 @@ function applySettings() {
 
 function resetDefaults() {
   settings = { ...DEFAULTS };
-  applySettingsToInputs();
   userEditedTimes = false;
+  applySettingsToInputs();
   document.getElementById('importantNote').style.display = 'none';
-  updateSourceDisplay();
   showToast('↺ Ajustes restablecidos');
   saveToLocalStorage();
   saveToFirestore();
 }
 
-function showImportantNote() {
-  const note = document.getElementById('importantNote');
-  if (note) note.style.display = 'block';
+function onManualTimeChange() {
   userEditedTimes = true;
   updateSourceDisplay();
+  showImportantNote(true);
+}
+
+function showImportantNote(show = true) {
+  const note = document.getElementById('importantNote');
+  if (note) note.style.display = show ? 'block' : 'none';
 }
 
 function generateSchedule() {
@@ -808,7 +876,6 @@ function generateSchedule() {
     schedule.push({ type: 'sleep', duration: 0, start: bedTime, end: bedTime, title: 'Hora de dormir', status: 'upcoming' });
   }
 
-  // Auto-detect current block based on real time
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   currentBlockIndex = 0;
