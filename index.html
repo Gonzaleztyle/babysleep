@@ -98,6 +98,17 @@
   .block.awake .block-type { color: var(--awake); }
   .block-time { font-size: 13px; color: var(--text-light); font-weight: 600; font-variant-numeric: tabular-nums; }
   .block-duration { font-size: 26px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .micro-feed {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(0,0,0,0.12);
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--text-light);
+    font-weight: 500;
+  }
+
   .block-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .block-actions .btn { flex: 1; min-width: 100px; }
 
@@ -122,7 +133,8 @@
   .setting-row:last-child { border-bottom: none; }
   .setting-label { font-size: 14px; font-weight: 600; color: var(--text); }
   .setting-input { display: flex; align-items: center; gap: 6px; }
-  .setting-input input { width: 55px; padding: 8px 4px; border: 2px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none; }
+  .setting-input input[type="number"] { width: 55px; padding: 8px 4px; border: 2px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 700; text-align: center; font-family: inherit; -webkit-appearance: none; }
+  .setting-input input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--primary); cursor: pointer; }
   .setting-input span { font-size: 12px; color: var(--text-light); font-weight: 600; }
 
   .history-item { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -252,6 +264,14 @@
         <span style="font-size:11px;color:var(--text-muted);font-weight:400;">Tiempos recomendados extraídos de guías de especialistas en sueño infantil</span>
       </div></div>
 
+      <div class="setting-row">
+        <span class="setting-label">Micro-línea de leche y sólidos</span>
+        <div class="setting-input">
+          <input type="checkbox" id="showFeedSuggestions" checked onchange="onFeedToggleChange()">
+          <span>Activar</span>
+        </div>
+      </div>
+
       <div class="controls" style="margin-top:12px;">
         <button class="btn btn-primary" onclick="applyAgeBasedSchedule()" style="width:100%;">🎯 Aplicar tiempos recomendados</button>
       </div>
@@ -339,8 +359,11 @@ const db = firebaseOk ? firebase.firestore() : null;
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════
-const DEFAULTS = { w1:150, n1:90, w2:165, n2:75, w3:135, n3:45, w4:195, babyAge:8, source:'promedio', napCount:2,
-  avgSleep: { total: 0, count: 0 }, avgAwake: { total: 0, count: 0 }, lastHistoryDate: '' };
+const DEFAULTS = {
+  w1: 150, n1: 90, w2: 165, n2: 75, w3: 135, n3: 45, w4: 195,
+  babyAge: 8, source: 'promedio', napCount: 2, showFeedSuggestions: true,
+  avgSleep: { total: 0, count: 0 }, avgAwake: { total: 0, count: 0 }, lastHistoryDate: ''
+};
 let settings = { ...DEFAULTS };
 let schedule = [];
 let currentBlockIndex = 0;
@@ -366,6 +389,36 @@ function getRecommendedTimes(age, source) {
   return isTwoNaps
     ? { w1: 150, n1: 90, w2: 165, n2: 75, w4: 195, napCount: 2, label: 'Promedio', windows: '2.5 - 3.25h' }
     : { w1: 105, n1: 75, w2: 120, n2: 75, w3: 135, n3: 45, w4: 180, napCount: 3, label: 'Promedio', windows: '1.75 - 2.25h' };
+}
+
+function getMicroFeedLine(block, idx, totalBlocks) {
+  if (!settings.showFeedSuggestions || block.type !== 'awake') return '';
+  const age = parseInt(settings.babyAge) || 8;
+  const source = settings.source || 'promedio';
+  const isLastAwake = idx === totalBlocks - 2;
+  const solidMin = source === 'takingcarababies' ? 50 : (source === 'huckleberry' ? 40 : 45);
+
+  if (age < 6) {
+    return isLastAwake
+      ? '🍼 Leche al despertar · 🌙 Leche antes de dormir'
+      : '🍼 Leche al despertar';
+  }
+
+  let mealLabel = '🥣 Sólidos';
+  if (idx === 0) mealLabel = '🥣 Desayuno';
+  else if (idx === 2) mealLabel = '🍽️ Almuerzo';
+  else if (isLastAwake) mealLabel = '🥗 Cena';
+
+  if (source === 'takingcarababies') {
+    const extra = isLastAwake ? ' · 🌙 Toma -25m' : ((block.duration || 0) >= 165 && idx > 0 ? ' · ✨ Refuerzo -15m' : '');
+    return `🍼 Leche · ${mealLabel} +${solidMin}m${extra}`;
+  }
+  if (source === 'huckleberry') {
+    const extra = isLastAwake ? ' · 🌙 Leche antes de dormir' : '';
+    return `🍼 Leche al despertar · ${mealLabel} +${solidMin}m${extra}`;
+  }
+  const extra = isLastAwake ? ' · 🌙 Leche antes de dormir' : '';
+  return `🍼 Leche · ${mealLabel} +${solidMin}m${extra}`;
 }
 
 function updateAgeDetails() {
@@ -448,7 +501,16 @@ function onSourceChange() {
   updateSourceDisplay();
   updateAgeDetails();
   showImportantNote(false);
+  render();
   showToast(`📚 Fuente cambiada a ${rec.label}`);
+  saveToLocalStorage();
+  saveToFirestore();
+}
+
+function onFeedToggleChange() {
+  const checkbox = document.getElementById('showFeedSuggestions');
+  settings.showFeedSuggestions = checkbox ? checkbox.checked : true;
+  render();
   saveToLocalStorage();
   saveToFirestore();
 }
@@ -774,6 +836,8 @@ function applySettingsToInputs() {
   setHM('n3', settings.n3);
   setHM('w4', settings.w4);
   document.getElementById('babyAge').value = settings.babyAge;
+  const feedCheckbox = document.getElementById('showFeedSuggestions');
+  if (feedCheckbox) feedCheckbox.checked = settings.showFeedSuggestions !== false;
   updateSourceDisplay();
   updateNapRows();
   updateAgeDetails();
@@ -790,12 +854,15 @@ function applySettings() {
   }
   settings.w4 = getHM('w4');
   settings.babyAge = parseInt(document.getElementById('babyAge').value) || DEFAULTS.babyAge;
+  const feedCheckbox = document.getElementById('showFeedSuggestions');
+  if (feedCheckbox) settings.showFeedSuggestions = feedCheckbox.checked;
   const selectVal = document.getElementById('sourceSelect').value;
   if (selectVal !== 'user') {
     settings.source = selectVal;
   }
 
   document.getElementById('importantNote').style.display = 'none';
+  render();
   showToast('💾 Ajustes guardados');
   saveToLocalStorage();
   saveToFirestore();
@@ -806,6 +873,7 @@ function resetDefaults() {
   userEditedTimes = false;
   applySettingsToInputs();
   document.getElementById('importantNote').style.display = 'none';
+  render();
   showToast('↺ Ajustes restablecidos');
   saveToLocalStorage();
   saveToFirestore();
@@ -946,6 +1014,7 @@ function render() {
     let titleText = b.title || (b.type === 'sleep' ? 'Siesta' : 'Ventana despierto');
     let effectiveStart = actualTimes[idx]?.start || b.start;
     let effectiveEnd = actualTimes[idx]?.end || b.end;
+    let microLine = getMicroFeedLine(b, idx, schedule.length);
 
     html += `<div class="${cls}">
       <div class="block-header">
@@ -953,6 +1022,7 @@ function render() {
         <span class="block-time">${effectiveStart} - ${effectiveEnd}</span>
       </div>
       <div class="block-duration">${b.duration ? formatHMDisplay(b.duration) : ''}</div>
+      ${microLine ? `<div class="micro-feed">${microLine}</div>` : ''}
       <div class="block-actions">
         ${isCurrent ? '<button class="btn btn-primary btn-small" onclick="completeBlock(' + idx + ')">✔️ Completar</button>' : ''}
         <button class="btn btn-outline btn-small" onclick="toggleEditBlock(${idx})">✏️ Editar</button>
