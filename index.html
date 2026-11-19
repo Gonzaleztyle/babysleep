@@ -107,6 +107,7 @@
     line-height: 1.35;
     color: var(--text-light);
     font-weight: 500;
+    font-variant-numeric: tabular-nums;
   }
 
   .block-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
@@ -265,7 +266,7 @@
       </div></div>
 
       <div class="setting-row">
-        <span class="setting-label">Micro-línea de leche y sólidos</span>
+        <span class="setting-label">Horas de tomas y comidas</span>
         <div class="setting-input">
           <input type="checkbox" id="showFeedSuggestions" checked onchange="onFeedToggleChange()">
           <span>Activar</span>
@@ -391,34 +392,27 @@ function getRecommendedTimes(age, source) {
     : { w1: 105, n1: 75, w2: 120, n2: 75, w3: 135, n3: 45, w4: 180, napCount: 3, label: 'Promedio', windows: '1.75 - 2.25h' };
 }
 
-function getMicroFeedLine(block, idx, totalBlocks) {
+function getMicroFeedLine(block, idx, totalBlocks, startStr) {
   if (!settings.showFeedSuggestions || block.type !== 'awake') return '';
   const age = parseInt(settings.babyAge) || 8;
   const source = settings.source || 'promedio';
+  const startMin = timeToMinutes(startStr);
   const isLastAwake = idx === totalBlocks - 2;
-  const solidMin = source === 'takingcarababies' ? 50 : (source === 'huckleberry' ? 40 : 45);
 
-  if (age < 6) {
-    return isLastAwake
-      ? '🍼 Leche al despertar · 🌙 Leche antes de dormir'
-      : '🍼 Leche al despertar';
+  const milkTime = minutesToTime(startMin + 10);
+  const solidDelay = source === 'takingcarababies' ? 50 : (source === 'huckleberry' ? 40 : 45);
+  const solidTime = minutesToTime(startMin + solidDelay);
+
+  const parts = [`🍼 ${milkTime}`];
+
+  if (age >= 6) {
+    let mealIcon = '🥣';
+    if (idx === 2) mealIcon = '🍽️';
+    else if (isLastAwake) mealIcon = '🥗';
+    parts.push(`${mealIcon} ${solidTime}`);
   }
 
-  let mealLabel = '🥣 Sólidos';
-  if (idx === 0) mealLabel = '🥣 Desayuno';
-  else if (idx === 2) mealLabel = '🍽️ Almuerzo';
-  else if (isLastAwake) mealLabel = '🥗 Cena';
-
-  if (source === 'takingcarababies') {
-    const extra = isLastAwake ? ' · 🌙 Toma -25m' : ((block.duration || 0) >= 165 && idx > 0 ? ' · ✨ Refuerzo -15m' : '');
-    return `🍼 Leche · ${mealLabel} +${solidMin}m${extra}`;
-  }
-  if (source === 'huckleberry') {
-    const extra = isLastAwake ? ' · 🌙 Leche antes de dormir' : '';
-    return `🍼 Leche al despertar · ${mealLabel} +${solidMin}m${extra}`;
-  }
-  const extra = isLastAwake ? ' · 🌙 Leche antes de dormir' : '';
-  return `🍼 Leche · ${mealLabel} +${solidMin}m${extra}`;
+  return parts.join(' · ');
 }
 
 function updateAgeDetails() {
@@ -1014,7 +1008,7 @@ function render() {
     let titleText = b.title || (b.type === 'sleep' ? 'Siesta' : 'Ventana despierto');
     let effectiveStart = actualTimes[idx]?.start || b.start;
     let effectiveEnd = actualTimes[idx]?.end || b.end;
-    let microLine = getMicroFeedLine(b, idx, schedule.length);
+    let microLine = getMicroFeedLine(b, idx, schedule.length, effectiveStart);
 
     html += `<div class="${cls}">
       <div class="block-header">
