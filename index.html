@@ -938,6 +938,8 @@ function generateSchedule() {
     schedule.push({ type: 'sleep', duration: 0, start: bedTime, end: bedTime, title: 'Hora de dormir', status: 'upcoming' });
   }
 
+  actualTimes = new Array(schedule.length).fill(null);
+
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   currentBlockIndex = 0;
@@ -950,7 +952,6 @@ function generateSchedule() {
     if (i === schedule.length - 1) currentBlockIndex = i;
   }
 
-  actualTimes = new Array(schedule.length).fill(null);
   document.getElementById('timelineCard').style.display = 'block';
   document.getElementById('statsCard').style.display = 'block';
 
@@ -1046,11 +1047,63 @@ function render() {
   updateCountdown();
 }
 
+function recalculateFromBlock(startIdx) {
+  if (startIdx < 0 || startIdx >= schedule.length) return;
+  let prevEndMin = timeToMinutes(actualTimes[startIdx]?.end || schedule[startIdx].end);
+
+  for (let i = startIdx + 1; i < schedule.length; i++) {
+    const b = schedule[i];
+    const isBedtime = b.type === 'sleep' && b.title && b.title.includes('dormir');
+    const dur = b.duration || 0;
+    const newStartStr = minutesToTime(prevEndMin);
+    const newEndStr = isBedtime ? newStartStr : minutesToTime(prevEndMin + dur);
+
+    b.start = newStartStr;
+    b.end = newEndStr;
+    actualTimes[i] = { start: newStartStr, end: newEndStr };
+
+    if (!isBedtime) {
+      prevEndMin += dur;
+    }
+  }
+}
+
 function completeBlock(idx) {
+  if (idx < 0 || idx >= schedule.length) return;
+  const block = schedule[idx];
+  const isBedtime = block.type === 'sleep' && block.title && block.title.includes('dormir');
+
+  if (!isBedtime) {
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const startMin = timeToMinutes(actualTimes[idx]?.start || block.start);
+    const scheduledEndMin = timeToMinutes(actualTimes[idx]?.end || block.end);
+
+    let actualEndMin = scheduledEndMin;
+    if (nowMin < scheduledEndMin) {
+      actualEndMin = Math.max(startMin + 1, nowMin);
+    } else if (nowMin > scheduledEndMin) {
+      actualEndMin = nowMin;
+    }
+
+    const actualEndStr = minutesToTime(actualEndMin);
+    const newDuration = Math.max(1, actualEndMin - startMin);
+
+    block.end = actualEndStr;
+    block.duration = newDuration;
+    actualTimes[idx] = {
+      start: actualTimes[idx]?.start || block.start,
+      end: actualEndStr
+    };
+
+    recalculateFromBlock(idx);
+  }
+
   if (idx < schedule.length - 1) {
     currentBlockIndex = idx + 1;
   }
-  showToast('✔️ Bloque completado');
+
+  showToast('✔️ Bloque completado · Horarios actualizados');
   render();
   saveToLocalStorage();
   saveToFirestore();
@@ -1069,15 +1122,21 @@ function cancelEditBlock() {
 function saveEditBlock(idx) {
   const newStart = document.getElementById(`editStart_${idx}`).value;
   const newEnd = document.getElementById(`editEnd_${idx}`).value;
-  if (!actualTimes[idx]) actualTimes[idx] = {};
-  actualTimes[idx].start = newStart;
-  actualTimes[idx].end = newEnd;
+  const block = schedule[idx];
+  const isBedtime = block.type === 'sleep' && block.title && block.title.includes('dormir');
 
-  const diff = timeToMinutes(newEnd) - timeToMinutes(newStart);
-  if (diff > 0) schedule[idx].duration = diff;
+  block.start = newStart;
+  block.end = newEnd;
+  actualTimes[idx] = { start: newStart, end: newEnd };
+
+  if (!isBedtime) {
+    const diff = timeToMinutes(newEnd) - timeToMinutes(newStart);
+    if (diff > 0) block.duration = diff;
+    recalculateFromBlock(idx);
+  }
 
   editingBlockIndex = null;
-  showToast('✏️ Bloque actualizado');
+  showToast('✏️ Bloque y siguientes actualizados');
   render();
   saveToLocalStorage();
   saveToFirestore();
@@ -1117,19 +1176,28 @@ function updateCountdown() {
   }
 
   const currentBlock = schedule[currentBlockIndex];
+  const isBedtime = currentBlock.type === 'sleep' && currentBlock.title && currentBlock.title.includes('dormir');
+  if (isBedtime) {
+    banner.style.display = 'none';
+    return;
+  }
+
   const targetTimeStr = actualTimes[currentBlockIndex]?.end || currentBlock.end;
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const targetMinutes = timeToMinutes(targetTimeStr);
-  let diff = targetMinutes - nowMinutes;
+  const diff = targetMinutes - nowMinutes;
 
-  if (diff < 0) diff += 1440;
+  if (diff <= 0) {
+    banner.style.display = 'none';
+    return;
+  }
 
   const hours = Math.floor(diff / 60);
   const minutes = diff % 60;
 
   document.getElementById('countdownTime').textContent = hours > 0 ? `${hours}h ${minutes}min` : `${minutes}min`;
-  document.getElementById('countdownEvent').textContent = `${currentBlock.title || 'Bloque actual'} termina en`;
+  document.getElementById('countdownEvent').textContent = `${currentBlock.title || 'Ventana despierto'} termina en`;
   banner.style.display = 'block';
 }
 
