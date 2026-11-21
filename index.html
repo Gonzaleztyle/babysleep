@@ -596,6 +596,7 @@ function resetLocalState() {
   document.getElementById('statsCard').style.display = 'none';
   document.getElementById('countdownBanner').style.display = 'none';
   render();
+  renderHistory();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -617,6 +618,7 @@ async function saveToFirestore() {
   const data = {
     email: currentUser.email || '',
     settings: saveSettings,
+    history: loadHistoryLocal(),
     today: {
       wakeTime: document.getElementById('wakeTime').value,
       schedule: schedule,
@@ -651,6 +653,9 @@ async function loadFromFirestore() {
       if (data.settings) {
         settings = { ...DEFAULTS, ...data.settings };
         applySettingsToInputs();
+      }
+      if (Array.isArray(data.history)) {
+        try { localStorage.setItem(LS_KEYS.history, JSON.stringify(data.history.slice(0, 60))); } catch (e) {}
       }
       if (data.today && data.today.date === new Date().toDateString()) {
         document.getElementById('wakeTime').value = data.today.wakeTime || '07:00';
@@ -757,8 +762,47 @@ function loadHistoryLocal() {
 
 function saveHistoryLocal(entry) {
   const h = loadHistoryLocal();
-  h.unshift(entry);
+  const idx = h.findIndex(item => item.dateKey === entry.dateKey);
+  if (idx >= 0) {
+    h[idx] = entry;
+  } else {
+    h.unshift(entry);
+  }
   try { localStorage.setItem(LS_KEYS.history, JSON.stringify(h.slice(0, 60))); } catch (e) {}
+}
+
+function recordHistorySnapshot() {
+  if (!schedule.length) return;
+  const now = new Date();
+  const dateKey = now.toISOString().slice(0, 10);
+  const dateLabel = now.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+  const wakeTimeVal = document.getElementById('wakeTime')?.value || '07:00';
+
+  const awakeBlocks = schedule.filter(b => b.type === 'awake');
+  const totalAwakeBlocks = awakeBlocks.length;
+  const windows = {};
+
+  awakeBlocks.forEach((b, idx) => {
+    let label = '';
+    if (totalAwakeBlocks === 3) {
+      label = idx === 0 ? '1ª ventana despierto' : (idx === 1 ? '2ª ventana despierto' : 'Última ventana despierto');
+    } else if (totalAwakeBlocks === 4) {
+      label = idx === 0 ? '1ª ventana despierto' : (idx === 1 ? '2ª ventana despierto' : (idx === 2 ? '3ª ventana despierto' : 'Última ventana despierto'));
+    } else {
+      label = `Ventana despierto ${idx + 1}`;
+    }
+    windows[label] = b.duration || 0;
+  });
+
+  const completedNaps = schedule.filter(b => b.type === 'sleep' && b.title && b.title.includes('Siesta') && b.status === 'completed').length;
+
+  saveHistoryLocal({
+    dateKey,
+    date: dateLabel,
+    wakeTime: wakeTimeVal,
+    windows,
+    completedNaps
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -968,8 +1012,10 @@ function generateSchedule() {
   document.getElementById('timelineCard').style.display = 'block';
   document.getElementById('statsCard').style.display = 'block';
 
+  recordHistorySnapshot();
   showToast('📅 Rutina generada con éxito');
   render();
+  renderHistory();
   saveToLocalStorage();
   saveToFirestore();
 }
@@ -991,6 +1037,7 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + tabId).classList.add('active');
   document.getElementById('tab-' + tabId).classList.add('active');
+  if (tabId === 'history') renderHistory();
 }
 
 function formatHMDisplay(mins) {
@@ -1132,8 +1179,10 @@ function completeBlock(idx) {
     currentBlockIndex = schedule.length;
   }
 
+  recordHistorySnapshot();
   showToast('✔️ Bloque finalizado · Horarios actualizados');
   render();
+  renderHistory();
   saveToLocalStorage();
   saveToFirestore();
 }
@@ -1184,8 +1233,10 @@ function saveEditBlock(idx) {
   }
 
   editingBlockIndex = null;
+  recordHistorySnapshot();
   showToast('✏️ Bloque y horarios restantes actualizados');
   render();
+  renderHistory();
   saveToLocalStorage();
   saveToFirestore();
 }
@@ -1251,18 +1302,49 @@ function updateCountdown() {
 
 function renderHistory() {
   const historyEl = document.getElementById('history');
+  if (!historyEl) return;
   const localHistory = loadHistoryLocal();
   if (!localHistory.length) {
     historyEl.innerHTML = '<div class="empty-state">No hay registros en el historial todavía.</div>';
     return;
   }
-  let html = '';
+
+  const totals = {};
+  const counts = {};
+
   localHistory.forEach(item => {
+    if (item.windows && typeof item.windows === 'object') {
+      Object.entries(item.windows).forEach(([winName, mins]) => {
+        totals[winName] = (totals[winName] || 0) + (Number(mins) || 0);
+        counts[winName] = (counts[winName] || 0) + 1;
+      });
+    }
+  });
+
+  const order = ['1ª ventana despierto', '2ª ventana despierto', '3ª ventana despierto', 'Última ventana despierto'];
+  const allKeys = [
+    ...order.filter(k => counts[k] > 0),
+    ...Object.keys(counts).filter(k => !order.includes(k))
+  ];
+
+  let html = '';
+  if (allKeys.length > 0) {
+    html += `<div class="history-item">
+      <div class="history-date">Promedio por ventana</div>
+      <div class="history-detail">${allKeys.map(k => `• <strong>${k}:</strong> ${formatHMDisplay(Math.round(totals[k] / counts[k]))}`).join('<br>')}</div>
+    </div>`;
+  }
+
+  localHistory.forEach(item => {
+    const winSummary = item.windows
+      ? Object.entries(item.windows).map(([k, v]) => `${k}: ${formatHMDisplay(v)}`).join(' · ')
+      : '';
     html += `<div class="history-item">
       <div class="history-date">${item.date}</div>
-      <div class="history-detail">Despertó: ${item.wakeTime} | Siestas completadas</div>
+      <div class="history-detail">Despertó: ${item.wakeTime}${winSummary ? `<br>${winSummary}` : ''}</div>
     </div>`;
   });
+
   historyEl.innerHTML = html;
 }
 
