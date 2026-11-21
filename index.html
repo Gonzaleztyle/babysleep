@@ -122,7 +122,7 @@
     .block-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
     .block-type { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--green); }
     .block-time { font-size: 0.8rem; color: #6b7280; font-weight: 600; }
-    .block-duration { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin-bottom: 8px; }
+    .block-duration { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin-bottom: 6px; }
     .block-actions { display: flex; gap: 8px; align-items: center; }
     .block-actions input[type="time"] {
       border: 1px solid #d1d5db;
@@ -223,31 +223,27 @@
       onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // ⚠️ REEMPLAZA ESTO CON TU CONFIGURACIÓN REAL DE FIREBASE
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_PROYECTO.firebaseapp.com",
-      projectId: "TU_PROYECTO",
-      storageBucket: "TU_PROYECTO.appspot.com",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID"
+      apiKey: "AIzaSyBPMC66YAtWcrV-UnPcKWGP-ZYs8-jgWR8",
+      authDomain: "baby-sleep-tracker-32717.firebaseapp.com",
+      projectId: "baby-sleep-tracker-32717",
+      storageBucket: "baby-sleep-tracker-32717.firebasestorage.app",
+      messagingSenderId: "613276258453",
+      appId: "1:613276258453:web:165d74c31c24522d114b9c"
     };
 
-    let auth = null;
-    let db = null;
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
     let currentUser = null;
     let unsubscribeSnapshot = null;
 
-    const isConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey !== "TU_API_KEY";
+    getRedirectResult(auth).catch(err => {
+      console.error("Error redirect auth:", err);
+      alert("Error al completar inicio de sesión: " + err.message);
+    });
 
-    if (isConfigured) {
-      const app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
-      getRedirectResult(auth).catch(err => console.error("Error redirect auth:", err));
-    }
-
-    // Estado de la app
     const todayKey = new Date().toISOString().slice(0, 10);
     let appState = {
       date: todayKey,
@@ -255,7 +251,6 @@
       blocks: []
     };
 
-    // Referencias DOM
     const wakeTimeInput = document.getElementById("wakeTimeInput");
     const btnGenerate = document.getElementById("btnGenerate");
     const btnLogin = document.getElementById("btnLogin");
@@ -268,7 +263,6 @@
     const timelineCard = document.getElementById("timelineCard");
     const nextBlockCard = document.getElementById("nextBlockCard");
 
-    // Utilidades de tiempo
     function timeToMinutes(t) {
       const [h, m] = t.split(":").map(Number);
       return h * 60 + m;
@@ -287,7 +281,6 @@
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
-    // Guardar en localStorage y Firestore (si hay sesión)
     async function saveState() {
       localStorage.setItem("babySleepState", JSON.stringify(appState));
       if (currentUser && db) {
@@ -297,12 +290,11 @@
           syncStatusEl.textContent = "☁️ Sincronizado con tu cuenta de Google";
         } catch (e) {
           console.error("Error guardando en Firestore:", e);
-          syncStatusEl.textContent = "⚠️ Error al sincronizar (revisa reglas de Firestore)";
+          syncStatusEl.textContent = "⚠️ Error al sincronizar: " + e.message;
         }
       }
     }
 
-    // Cargar estado inicial desde localStorage
     function loadLocalState() {
       const saved = localStorage.getItem("babySleepState");
       if (saved) {
@@ -317,16 +309,21 @@
       render();
     }
 
-    // Generar rutina base a partir de hora de despertar
+    function getFeedMicroLine(startMins, isFirstAwake, isLastAwake) {
+      const milkStr = minutesToTime(startMins + 10);
+      const mealStr = minutesToTime(startMins + 45);
+      const mealIcon = isFirstAwake ? "🥣" : (isLastAwake ? "🥗" : "🍽️");
+      return `🍼 ${milkStr} · ${mealIcon} ${mealStr}`;
+    }
+
     function generateRoutine(wakeStr) {
       const start = timeToMinutes(wakeStr);
-      // Ejemplo de ventanas despierto / siestas / tomas
       const template = [
-        { title: "Ventana despierto", duration: 160, note: "🍼 Toma al despertar" },
-        { title: "1ª Siesta", duration: 60, note: "💤 Siesta mañana" },
-        { title: "Ventana despierto + Comida", duration: 180, note: "🥣 Almuerzo / Toma" },
-        { title: "2ª Siesta", duration: 60, note: "💤 Siesta tarde" },
-        { title: "Ventana despierto + Cena", duration: 195, note: "🍼 Toma tarde / Cena" }
+        { title: "Ventana despierto", duration: 150, isAwake: true, first: true, last: false },
+        { title: "1ª Siesta", duration: 90, isAwake: false },
+        { title: "Ventana despierto", duration: 165, isAwake: true, first: false, last: false },
+        { title: "2ª Siesta", duration: 75, isAwake: false },
+        { title: "Ventana despierto", duration: 195, isAwake: true, first: false, last: true }
       ];
 
       let cursor = start;
@@ -336,11 +333,15 @@
         blocks: template.map((item, idx) => {
           const blockStart = cursor;
           const blockEnd = cursor + item.duration;
+          const note = item.isAwake ? getFeedMicroLine(blockStart, item.first, item.last) : "";
           cursor = blockEnd;
           return {
             id: idx,
             title: item.title,
-            note: item.note,
+            isAwake: item.isAwake,
+            first: Boolean(item.first),
+            last: Boolean(item.last),
+            note,
             start: minutesToTime(blockStart),
             end: minutesToTime(blockEnd),
             duration: item.duration,
@@ -352,12 +353,14 @@
       render();
     }
 
-    // Recalcular en cascada si se edita una hora de inicio
     function updateBlockStart(index, newStartStr) {
       let cursor = timeToMinutes(newStartStr);
       for (let i = index; i < appState.blocks.length; i++) {
         const b = appState.blocks[i];
         b.start = minutesToTime(cursor);
+        if (b.isAwake) {
+          b.note = getFeedMicroLine(cursor, b.first, b.last);
+        }
         cursor += b.duration;
         b.end = minutesToTime(cursor);
       }
@@ -366,7 +369,27 @@
     }
 
     function toggleDone(index) {
-      appState.blocks[index].done = !appState.blocks[index].done;
+      const b = appState.blocks[index];
+      b.done = !b.done;
+      if (b.done) {
+        const now = new Date();
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+        const startMins = timeToMinutes(b.start);
+        if (nowMins > startMins) {
+          b.duration = nowMins - startMins;
+          b.end = minutesToTime(nowMins);
+          let cursor = nowMins;
+          for (let i = index + 1; i < appState.blocks.length; i++) {
+            const next = appState.blocks[i];
+            next.start = minutesToTime(cursor);
+            if (next.isAwake) {
+              next.note = getFeedMicroLine(cursor, next.first, next.last);
+            }
+            cursor += next.duration;
+            next.end = minutesToTime(cursor);
+          }
+        }
+      }
       saveState();
       render();
     }
@@ -390,7 +413,7 @@
             <span class="block-time">${b.start} - ${b.end}</span>
           </div>
           <div class="block-duration">${formatDuration(b.duration)}</div>
-          <div style="font-size:0.8rem;color:#4b5563;margin-bottom:8px;">${b.note}</div>
+          ${b.note ? `<div style="font-size:0.8rem;color:#4b5563;margin-bottom:8px;">${b.note}</div>` : ""}
           <div class="block-actions">
             <input type="time" value="${b.start}" data-idx="${idx}" class="edit-start" />
             <button class="btn-check" data-idx="${idx}">${b.done ? "Completado" : "Marcar listo"}</button>
@@ -434,16 +457,11 @@
       }
     }
 
-    // Eventos UI
     btnGenerate.addEventListener("click", () => {
       generateRoutine(wakeTimeInput.value || "07:00");
     });
 
     btnLogin.addEventListener("click", async () => {
-      if (!isConfigured) {
-        alert("Falta configurar las credenciales de Firebase (firebaseConfig) en el código.");
-        return;
-      }
       const provider = new GoogleAuthProvider();
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       try {
@@ -459,45 +477,43 @@
     });
 
     btnLogout.addEventListener("click", async () => {
-      if (auth) await signOut(auth);
+      await signOut(auth);
     });
 
-    // Escuchar sesión de Google y sincronizar en tiempo real entre PC y celular
-    if (auth) {
-      onAuthStateChanged(auth, (user) => {
-        currentUser = user;
-        if (unsubscribeSnapshot) {
-          unsubscribeSnapshot();
-          unsubscribeSnapshot = null;
-        }
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
 
-        if (user) {
-          loggedOutView.style.display = "none";
-          loggedInView.style.display = "block";
-          userEmailEl.textContent = `👤 ${user.email}`;
+      if (user) {
+        loggedOutView.style.display = "none";
+        loggedInView.style.display = "block";
+        userEmailEl.textContent = `👤 ${user.email}`;
 
-          // Escuchar cambios en tiempo real desde Firestore
-          const docRef = doc(db, "users", user.uid, "routines", todayKey);
-          unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
-            if (snap.exists()) {
-              appState = snap.data();
-              wakeTimeInput.value = appState.wakeTime;
-              localStorage.setItem("babySleepState", JSON.stringify(appState));
-              render();
-            } else if (appState.blocks.length > 0) {
-              // Si hay datos locales hoy pero aún no en la nube, súbelos
-              saveState();
-            }
-          });
-        } else {
-          loggedOutView.style.display = "block";
-          loggedInView.style.display = "none";
-        }
-      });
-    }
+        const docRef = doc(db, "users", user.uid, "routines", todayKey);
+        unsubscribeSnapshot = onSnapshot(docRef, (snap) => {
+          if (snap.exists()) {
+            appState = snap.data();
+            wakeTimeInput.value = appState.wakeTime;
+            localStorage.setItem("babySleepState", JSON.stringify(appState));
+            render();
+          } else if (appState.blocks.length > 0) {
+            saveState();
+          }
+        }, (err) => {
+          console.error("Error snapshot:", err);
+          syncStatusEl.textContent = "⚠️ Error de permisos en Firestore";
+        });
+      } else {
+        loggedOutView.style.display = "block";
+        loggedInView.style.display = "none";
+      }
+    });
 
     loadLocalState();
-    setInterval(updateCountdown, 30000);
+    setInterval(updateCountdown, 15000);
   </script>
 </body>
 </html>
