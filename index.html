@@ -944,11 +944,12 @@ function generateSchedule() {
   const nowMin = now.getHours() * 60 + now.getMinutes();
   currentBlockIndex = 0;
   for (let i = 0; i < schedule.length; i++) {
-    const endMin = timeToMinutes(actualTimes[i]?.end || schedule[i].end);
+    const endMin = timeToMinutes(schedule[i].end);
     if (nowMin < endMin) {
       currentBlockIndex = i;
       break;
     }
+    schedule[i].status = 'completed';
     if (i === schedule.length - 1) currentBlockIndex = i;
   }
 
@@ -997,8 +998,8 @@ function render() {
 
   let html = '';
   schedule.forEach((b, idx) => {
-    let isPast = idx < currentBlockIndex;
-    let isCurrent = idx === currentBlockIndex;
+    let isPast = idx < currentBlockIndex || b.status === 'completed';
+    let isCurrent = idx === currentBlockIndex && b.status !== 'completed';
     let isEditing = idx === editingBlockIndex;
 
     let cls = 'block ' + (b.type === 'sleep' ? 'sleep' : 'awake');
@@ -1013,7 +1014,7 @@ function render() {
 
     html += `<div class="${cls}">
       <div class="block-header">
-        <span class="block-type">${titleText}</span>
+        <span class="block-type">${titleText} ${isPast ? '✓' : ''}</span>
         <span class="block-time">${effectiveStart} - ${effectiveEnd}</span>
       </div>
       <div class="block-duration">${b.duration ? formatHMDisplay(b.duration) : ''}</div>
@@ -1073,37 +1074,54 @@ function completeBlock(idx) {
   const block = schedule[idx];
   const isBedtime = block.type === 'sleep' && block.title && block.title.includes('dormir');
 
-  if (!isBedtime) {
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const startMin = timeToMinutes(actualTimes[idx]?.start || block.start);
-    const scheduledEndMin = timeToMinutes(actualTimes[idx]?.end || block.end);
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
 
-    let actualEndMin = scheduledEndMin;
-    if (nowMin < scheduledEndMin) {
-      actualEndMin = Math.max(startMin + 1, nowMin);
-    } else if (nowMin > scheduledEndMin) {
+  if (!isBedtime) {
+    let startMin = timeToMinutes(actualTimes[idx]?.start || block.start);
+    let actualEndMin = nowMin;
+
+    // Si el bloque ni siquiera había empezado según lo planeado, ajustamos inicio y fin al momento real
+    if (nowMin < startMin) {
+      startMin = nowMin;
       actualEndMin = nowMin;
     }
 
+    const actualStartStr = minutesToTime(startMin);
     const actualEndStr = minutesToTime(actualEndMin);
-    const newDuration = Math.max(1, actualEndMin - startMin);
+    const newDuration = Math.max(0, actualEndMin - startMin);
 
+    block.start = actualStartStr;
     block.end = actualEndStr;
     block.duration = newDuration;
+    block.status = 'completed';
+
     actualTimes[idx] = {
-      start: actualTimes[idx]?.start || block.start,
+      start: actualStartStr,
       end: actualEndStr
     };
 
     recalculateFromBlock(idx);
+  } else {
+    const bedStr = minutesToTime(nowMin);
+    block.start = bedStr;
+    block.end = bedStr;
+    block.status = 'completed';
+    actualTimes[idx] = { start: bedStr, end: bedStr };
+  }
+
+  for (let i = 0; i <= idx; i++) {
+    schedule[i].status = 'completed';
   }
 
   if (idx < schedule.length - 1) {
     currentBlockIndex = idx + 1;
+    schedule[currentBlockIndex].status = 'upcoming';
+  } else {
+    currentBlockIndex = schedule.length;
   }
 
-  showToast('✔️ Bloque completado · Horarios actualizados');
+  showToast('✔️ Bloque finalizado · Horarios actualizados');
   render();
   saveToLocalStorage();
   saveToFirestore();
@@ -1131,12 +1149,32 @@ function saveEditBlock(idx) {
 
   if (!isBedtime) {
     const diff = timeToMinutes(newEnd) - timeToMinutes(newStart);
-    if (diff > 0) block.duration = diff;
+    if (diff >= 0) block.duration = diff;
     recalculateFromBlock(idx);
   }
 
+  // Re-evaluar qué bloques quedan finalizados y cuál es el actual según la hora presente
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let foundCurrent = false;
+  for (let i = 0; i < schedule.length; i++) {
+    const endMin = timeToMinutes(actualTimes[i]?.end || schedule[i].end);
+    if (!foundCurrent && nowMin < endMin) {
+      currentBlockIndex = i;
+      schedule[i].status = 'upcoming';
+      foundCurrent = true;
+    } else if (!foundCurrent) {
+      schedule[i].status = 'completed';
+    } else {
+      schedule[i].status = 'upcoming';
+    }
+  }
+  if (!foundCurrent) {
+    currentBlockIndex = schedule.length;
+  }
+
   editingBlockIndex = null;
-  showToast('✏️ Bloque y siguientes actualizados');
+  showToast('✏️ Bloque y horarios restantes actualizados');
   render();
   saveToLocalStorage();
   saveToFirestore();
